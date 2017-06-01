@@ -21,7 +21,7 @@
             </tr>
             <tr>
                 <td>Arranger:</td>
-                <td>{% if arranger %}{{ entry.arranger.given }} {{ entry.arranger.surname }}{% endif %}</td>
+                <td>{% if entry.arranger %}{{ entry.arranger.given }} {{ entry.arranger.surname }}{% endif %}</td>
             </tr>
             {% if entry.comments %}
                 <tr>

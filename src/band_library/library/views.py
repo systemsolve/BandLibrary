@@ -5,7 +5,7 @@ from django.db.models import Q
 import django_tables2 as tables
 from django_tables2 import RequestConfig
 from django_tables2.utils import A  # alias for Accessor
-import subprocess, os, sys
+import subprocess, os, sys, datetime
 from django.conf import settings
 
 
@@ -78,9 +78,17 @@ def incipit(request, item):
         ffc = open(os.path.join(cachedir, entry.media + ".jpg"))
     except:
         print >>sys.stderr, "convert %s" % os.path.join(mediadir, entry.media)
-        subprocess.call("pdftoppm -singlefile -jpeg '%s' '%s'" % (os.path.join(mediadir, entry.media), os.path.join(cachedir, entry.media)), shell=True)
+        command = "pdftoppm -singlefile -jpeg \"%s\" \"%s\"" % (os.path.join(mediadir, entry.media), os.path.join(cachedir, entry.media))
+        print >>sys.stderr, "command %s" % command
+        subprocess.call(command, shell=True)
         ffc = open(os.path.join(cachedir, entry.media + ".jpg"))
-    return HttpResponse(ffc.read(), content_type="image/jpeg")
+        
+    response = HttpResponse(ffc.read(), content_type="image/jpeg")
+    response['Cache-Control'] = "public"
+    modtime = os.path.getmtime(os.path.join(cachedir, entry.media + ".jpg"))
+    response['Last-Modified'] = datetime.datetime.utcfromtimestamp(modtime).strftime("%a, %d %b %y %H:%M:%S GMT")
+    return response
+
 
 def top(request):
     return render(request, 'library/home.twig', {'categories': Category.objects.all()})

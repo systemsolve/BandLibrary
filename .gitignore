@@ -4,3 +4,7 @@
 /mediacache/
 /zipfiles/
 *.pyc
+/src/band_library/test1.csv
+/src/band_library/library-stuff.csv
+/src/band_library/www
+/src/band_library/db.sqlite3

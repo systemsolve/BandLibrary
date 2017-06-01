@@ -1,0 +1,42 @@
+{% extends "library/base.twig" %}
+{% load band_tags %}
+{% block title %}
+    <title>Entry: {{entry.title}}</title>
+{% endblock %}
+{% block main %}
+    <h2>Library entry: {{ entry.title }}</h2>
+    <table class="table">
+        <tbody>
+            <tr>
+                <td>Category:</td>
+                <td>{{ entry.category }}</td>
+            </tr>
+            <tr>
+                <td>Label/Call no.:</td>
+                <td>{{ entry.callno }}</td>
+            </tr>
+            <tr>
+                <td>Composer:</td>
+                <td>{{ entry.composer.given }} {{ entry.composer.surname }}</td>
+            </tr>
+            <tr>
+                <td>Arranger:</td>
+                <td>{% if arranger %}{{ entry.arranger.given }} {{ entry.arranger.surname }}{% endif %}</td>
+            </tr>
+            {% if entry.comments %}
+                <tr>
+                    <td>Comments:</td>
+                    <td>{{ entry.comments }}</td>
+                </tr>
+            {% endif %}
+            {% if entry.media %}
+                <tr>
+                    <td>Solo cornet page 1:</td>
+                    <td>
+                        <img width=400 src='../../incipit/{{ entry.id }}'>
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+{% endblock %}

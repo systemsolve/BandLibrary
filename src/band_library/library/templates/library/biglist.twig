@@ -1,0 +1,40 @@
+{% extends "library/base.twig" %}
+{# templates/library/biglist.twig #}
+{% load render_table from django_tables2 %}
+{% load static %}
+{% block styles %}
+<link rel="stylesheet" href="{% static 'django_tables2/themes/paleblue/css/screen.css' %}" />
+<style type="text/css">
+
+</style>
+{% endblock %}
+{% block title %}
+    <title>Catalogue Listing: OB</title>
+{% endblock %}
+{% block main %}
+    <div id='nav'>
+        <a href='/'>HOME</a>
+    </div>
+
+    <div id="controls">
+        <form class="form-inline" action=''>
+            Keywords: <input class="form-control" type="text" name="words" value="{{thewords}}"> 
+            Category: 
+            <select class="form-control" name="category">
+                <option value="">All</option>
+                {% for opt in categories %}
+                    {# must have the same integer type #}
+                    {% if thecat == opt.id %}
+                        <option selected value="{{opt.id}}">{{opt.label}}</option>
+                    {% else %}
+                        <option value="{{opt.id}}">{{opt.label}}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+            <input class="btn btn-primary" type="submit" value="Search">
+        </form>
+    </div>
+    <div id="results">
+        {% render_table entries 'django_tables2/bootstrap.html' %}
+    </div>
+{% endblock %}

@@ -1,0 +1,108 @@
+
+{% load django_tables2 %}
+{% load i18n %}
+{% if table.page %}
+<div class="table-container">
+{% endif %}
+
+{% if table.page %}
+{% with table.page.paginator.count as total %}
+{% with table.page.paginator.num_pages as thelastone %}
+{% with table.page.object_list|length as count %}
+
+{% block pagination %}
+<ul class="pagination">
+
+
+{% block pagination.first %}<li class="first"><a href="{% querystring table.prefixed_page_field=1 %}" onclick="{% if table.page.has_previous %}return true{% else %}return false{% endif %}" style="padding-bottom:12px"><span class="glyphicon glyphicon-chevron-left"></span><span class="glyphicon glyphicon-chevron-left"></span></a></li>{% endblock pagination.first %}
+
+   {% block pagination.previous %}<li class="previous"><a href="{% if table.page.has_previous %}{% querystring table.prefixed_page_field=table.page.previous_page_number %}{% endif %}" onclick="{% if table.page.has_previous %}return true{% else %}return false{% endif %}" style="padding-bottom:12px"><span class="glyphicon glyphicon-chevron-left"></span></a></li>{% endblock pagination.previous %}
+
+
+{% block pagination.current %}
+
+{% for i in table.page.paginator.page_range %}
+
+    {% if  i|add:'-2' >= table.page.number|add:'-2'  and i <= table.page.number|add:'2' or i|add:'2' <= table.page.number|add:'2'  and i >= table.page.number|add:'-2' %}
+
+        {% ifequal i table.page.number %}
+        <li class="current"><b> {{i}} </b></li>
+        {% else %}
+        <li><a href="{% querystring table.prefixed_page_field=i %}"><b> {{i}} </b></a></li>
+        {% endifequal %}
+    {% endif %}
+{% endfor%}
+
+{% endblock pagination.current %}
+
+
+
+
+    {% block pagination.next %}<li class="next"><a href="{% if table.page.has_next %}{% querystring table.prefixed_page_field=table.page.next_page_number %}{% endif %}" style="padding-bottom:12px" onclick="{% if table.page.has_next %}return true{% else %}return false{% endif %}"><span class="glyphicon glyphicon-chevron-right"></span></a></li>{% endblock pagination.next %}
+
+    {% block pagination.last %}<li class="last"><a href="{% querystring table.prefixed_page_field=thelastone %}" style="border-top-right-radius:4px;border-bottom-right-radius:4px;padding-bottom:12px" onclick="{% if table.page.has_next %}return true{% else %}return false{% endif %}"><span class="glyphicon glyphicon-chevron-right"></span><span class="glyphicon glyphicon-chevron-right"></span></a></li>{% endblock pagination.last %}
+
+    {% block pagination.cardinality %}<li class="cardinality">{% if total != count %}{% blocktrans %}{{ count }} / {{ total }}{% endblocktrans %}{% else %}{{ total }}{% endif %} {% if total == 1 %}{{ table.data.verbose_name }}{% else %}{{ table.data.verbose_name_plural }}{% endif %}</li>{% endblock pagination.cardinality %}
+
+</ul>
+{% endblock pagination %}
+{% endwith %}
+{% endwith %}
+{% endwith %}
+
+{% else%}
+<p><h3> Aucun résultat</h3></p>
+{% endif %}
+
+{% block table %}
+
+... No changes here
+
+{% endblock table %}
+
+{% if table.page %}
+{% with table.page.paginator.count as total %}
+{% with table.page.object_list|length as count %}
+{% with table.page.paginator.num_pages as thelastone %}
+{% block pagination_bot %}
+<ul class="pagination">
+
+
+{% block pagination_bot.first %}<li class="first"><a href="?page=1" onclick="{% if table.page.has_previous %}return true{% else %}return false{% endif %}" style="padding-bottom:12px"><span class="glyphicon glyphicon-chevron-left"></span><span class="glyphicon glyphicon-chevron-left"></span></a></li>{% endblock pagination_bot.first %}
+
+    {% block pagination_bot.previous %}<li class="previous"><a href="{% if table.page.has_previous %}{% querystring table.prefixed_page_field=table.page.previous_page_number %}{% endif %}" onclick="{% if table.page.has_previous %}return true{% else %}return false{% endif %}" style="padding-bottom:12px"><span class="glyphicon glyphicon-chevron-left"></span></a></li>{% endblock pagination_bot.previous %}
+
+
+{% block pagination_bot.current %}
+
+{% for i in table.page.paginator.page_range %}
+
+    {% if  i|add:'-2' >= table.page.number|add:'-2'  and i <= table.page.number|add:'2' or i|add:'2' <= table.page.number|add:'2'  and i >= table.page.number|add:'-2' %}
+
+        {% ifequal i table.page.number %}
+        <li class="current"><b> {{i}} </b></li>
+        {% else %}
+        <li><a href="?page={{i}}"><b> {{i}} </b></a></li>
+        {% endifequal %}
+    {% endif %}
+{% endfor%}
+
+{% endblock pagination_bot.current %}
+
+
+
+
+  {% block pagination_bot.next %}<li class="next"><a href="{% if table.page.has_next %}{% querystring table.prefixed_page_field=table.page.next_page_number %}{% endif %}" style="padding-bottom:12px" onclick="{% if table.page.has_next %}return true{% else %}return false{% endif %}"><span class="glyphicon glyphicon-chevron-right"></span></a></li>{% endblock pagination_bot.next %}
+
+    {% block pagination_bot.last %}<li class="last"><a href="?page={{thelastone}}" style="border-top-right-radius:4px;border-bottom-right-radius:4px;padding-bottom:12px" onclick="{% if table.page.has_next %}return true{% else %}return false{% endif %}"><span class="glyphicon glyphicon-chevron-right"></span><span class="glyphicon glyphicon-chevron-right"></span></a></li>{% endblock pagination_bot.last %}
+
+    {% block pagination_bot.cardinality %}<li class="cardinality">{% if total != count %}{% blocktrans %}{{ count }} / {{ total }}{% endblocktrans %}{% else %}{{ total }}{% endif %} {% if total == 1 %}{{ table.data.verbose_name }}{% else %}{{ table.data.verbose_name_plural }}{% endif %}</li>{% endblock pagination_bot.cardinality %}
+
+</ul>
+{% endblock pagination_bot %}
+{% endwith %}
+{% endwith %}
+{% endwith %}
+</div>
+{% endif %}
+

@@ -1,0 +1,27 @@
+{% extends "library/base.twig" %}
+{% block title %}
+    <title>Oakleigh Brass Catalogue</title>
+{% endblock %}
+{% block main %}
+        
+        <h1>Welcome to the Oakleigh Brass library catalogue</h1>
+        <form class="form-inline" action='/library/'>
+            Keywords: <input class="form-control" type="text" name="words" value="{{thewords}}"> 
+            Category: 
+            <select class="form-control" name="category">
+                <option value="">All</option>
+                {% for opt in categories %}
+                    {# must have the same integer type #}
+                    {% if thecat == opt.id %}
+                        <option selected value="{{opt.id}}">{{opt.label}}</option>
+                    {% else %}
+                        <option value="{{opt.id}}">{{opt.label}}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+            <input class="btn btn-primary" type="submit" value="Quick Search">
+        </form>
+        <h2><a href='/library/'>Full Listing</a></h2>
+        <p><a href='/admin/'>Admin: authorised users only</a></p>
+        
+{% endblock %}

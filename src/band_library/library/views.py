@@ -17,7 +17,7 @@ class EntryTable(tables.Table):
     
     def render_media(self, value, record):
         if value:
-            return mark_safe("<img width=40 src='incipit/%s'>" % record.id)
+            return mark_safe("<img width=40 src='chip/%s'>" % record.id)
         else:
             return ""
 
@@ -70,6 +70,24 @@ def index(request):
 #cachedir = os.path.join(basedir, 'mediacache')
 mediadir = settings.BL_MEDIADIR
 cachedir = settings.BL_CACHEDIR
+
+def chip(request, item):
+    entry = Entry.objects.filter(pk__exact=item).first()
+    try:
+        print >>sys.stderr, "open %s" % os.path.join(cachedir, "chip-" + entry.media + ".jpg")
+        ffc = open(os.path.join(cachedir, "chip-"+ entry.media + ".jpg"))
+    except:
+        print >>sys.stderr, "convert %s" % os.path.join(mediadir, entry.media)
+        command = "pdftoppm -singlefile -r 16 -jpeg \"%s\" \"%s\"" % (os.path.join(mediadir, entry.media), os.path.join(cachedir, "chip-" + entry.media))
+        print >>sys.stderr, "command %s" % command
+        subprocess.call(command, shell=True)
+        ffc = open(os.path.join(cachedir, "chip-" + entry.media + ".jpg"))
+        
+    response = HttpResponse(ffc.read(), content_type="image/jpeg")
+    response['Cache-Control'] = "public"
+    modtime = os.path.getmtime(os.path.join(cachedir, "chip-" + entry.media + ".jpg"))
+    response['Last-Modified'] = datetime.datetime.utcfromtimestamp(modtime).strftime("%a, %d %b %y %H:%M:%S GMT")
+    return response
 
 def incipit(request, item):
     entry = Entry.objects.filter(pk__exact=item).first()

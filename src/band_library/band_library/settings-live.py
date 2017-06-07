@@ -135,3 +135,4 @@ STATIC_URL = '/static/'
 BL_BASEDIR = '/data/django/www'
 BL_MEDIADIR = os.path.join(BL_BASEDIR, 'media')
 BL_CACHEDIR = os.path.join(BL_BASEDIR, 'mediacache')
+MEDIA_ROOT = BL_MEDIADIR

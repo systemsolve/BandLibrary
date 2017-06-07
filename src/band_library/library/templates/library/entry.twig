@@ -5,6 +5,9 @@
 {% endblock %}
 {% block main %}
     <h2>Library entry: {{ entry.title }}</h2>
+    {% if can_edit %}
+        <a href="/admin/library/entry/{{entry.id}}/change">Edit this entry</a>
+    {% endif %}
     <div class="table-responsive">
         <table class="table table-condensed">
             <tbody>

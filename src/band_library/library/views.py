@@ -66,6 +66,8 @@ def index(request):
         table = EntryTable(entries.filter(fff))
     else:
         table = EntryTable(entries.all())
+    if not request.user.is_authenticated:
+        table.exclude = ('id', 'comments', 'callno', 'added', 'duration')
     RequestConfig(request, paginate={'per_page': 50}).configure(table)    
     return render(request, 'library/biglist.twig', {'entries': table, 'categories': Category.objects.all(), 'thewords': thewords, 'thecat': thecat})
 

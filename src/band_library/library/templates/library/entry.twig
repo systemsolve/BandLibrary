@@ -8,17 +8,19 @@
     {% if can_edit %}
         <a href="/admin/library/entry/{{entry.id}}/change">Edit this entry</a>
     {% endif %}
-    <div class="table-responsive">
+    <div class="table-container">
         <table class="table table-condensed">
             <tbody>
                 <tr>
                     <td>Category:</td>
                     <td>{{ entry.category }}</td>
                 </tr>
+                {% if can_edit %}
                 <tr>
                     <td>Label/Call no.:</td>
                     <td>{{ entry.callno }}</td>
                 </tr>
+                {% endif %}
                 <tr>
                     <td>Composer:</td>
                     <td>{{ entry.composer.given }} {{ entry.composer.surname }}</td>
@@ -34,9 +36,8 @@
                     </tr>
                 {% endif %}
                 {% if entry.media %}
-                    <tr>
-                        <td>Solo cornet page 1:</td>
-                        <td>
+                    <tr>                        
+                        <td colspan="2">
                             <img width=400 src='../../incipit/{{ entry.id }}'>
                         </td>
                     </tr>

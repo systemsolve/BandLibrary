@@ -15,11 +15,14 @@ Including another URLconf
 """
 from django.conf.urls import include, url
 from django.contrib import admin
+from django.http import HttpResponse
 
 from library import views
 
 urlpatterns = [
     url(r'^$', views.top, name='home'),
+    url(r'^logout$', views.logout_view, name='logout'),
     url(r'^library/', include('library.urls')),
-    url(r'^admin/', admin.site.urls),    
+    url(r'^admin/', admin.site.urls),
+    url(r'^robots.txt$', lambda r: HttpResponse("User-agent: *\nDisallow: /", content_type="text/plain")) 
 ]

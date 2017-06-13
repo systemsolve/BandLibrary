@@ -1,14 +1,18 @@
 from django.contrib import admin
 from django.contrib.admin.widgets import AdminFileWidget
-from django.utils.safestring import mark_safe
-import sys
 from django.db import models
-
-from .models import Entry, Author, Program, Category, Instrument
+from django.utils.safestring import mark_safe
+from django.forms.widgets import Textarea
+from models import Author
+from models import Category
+from models import Entry
+from models import Instrument
+from models import Program
+import sys
 
 class AdminImageWidget(AdminFileWidget):
     def render(self, name, value, attrs=None):
-        print >>sys.stderr,"IMAGE WIDGET: %s %s" % (name, str(self))
+        print >> sys.stderr, "IMAGE WIDGET: %s %s" % (name, str(self))
         output = []
         if value and getattr(value, "url", None):
             image_url = value.name
@@ -20,12 +24,22 @@ class AdminImageWidget(AdminFileWidget):
 
 class EntryAdmin(admin.ModelAdmin):
     list_display = ('title', 'category', 'callno', 'composer', 'arranger', 'image_present', 'duration', 'instrument')
-    list_filter = ('category',)
-    search_fields = ['title','composer__given', 'composer__surname', 'arranger__surname']
+    list_filter = ('category', )
+    search_fields = ['title', 'composer__given', 'composer__surname', 'arranger__surname']
     readonly_fields = ('image_link', 'image_present')
+    save_on_top = True
+    fields = ('title', ('category', 'callno'), ('composer', 'arranger'), 'instrument', 'comments', 'media', 'image_link')
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(
+              attrs={
+                  'rows': 4,
+                  'cols': 40
+              })
+        },
+    }
 
     def image_link(self, instance):
-        print >>sys.stderr,"IMAGE LINK: %s %s" % (str(instance.media), str(instance.id))
+        print >> sys.stderr, "IMAGE LINK: %s %s" % (str(instance.media), str(instance.id))
         if instance.media:
             return mark_safe(u'<img width="300" src="%s" alt="%s" />' % ("/library/incipit/" + str(instance.id), "FRED"))
         else:
@@ -46,7 +60,7 @@ class EntryAdmin(admin.ModelAdmin):
     
 class AuthorAdmin(admin.ModelAdmin):
     list_display = ('surname', 'given')
-    search_fields = ['surname','given']
+    search_fields = ['surname', 'given']
 
 
 admin.site.register(Entry, EntryAdmin)

@@ -1,0 +1,21 @@
+{% extends "library/base.twig" %}
+{% block title %}
+    <title>Oakleigh Brass Catalogue</title>
+{% endblock %}
+{% block main %}
+
+    <h1>Welcome to the Oakleigh Brass library catalogue</h1>
+    <h2>Please log in. <a href='mailto:connect@oakleighband.org.au?subject=Library Access'>Contact us</a> if you want a login account</h2>
+    <hr>
+    <div class='row'>
+        <div class='col-md-12'>
+            <form class='form-inline' method='POST' action=''>
+                {% csrf_token %}
+                U: <input class='form-control' type='text' placeholder='user name' name='username'>
+                P: <input class='form-control' type='password' placeholder='password' name='password'>
+                <button type='submit' class='btn btn-primary'>Log In</button>
+            </form>
+        </div>
+    </div>
+
+{% endblock %}

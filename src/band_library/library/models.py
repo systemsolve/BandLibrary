@@ -43,6 +43,10 @@ class Entry(models.Model):
 class Author(models.Model):
     surname = models.CharField(max_length=32)
     given = models.CharField(max_length=48, blank=True, null=True)
+    bornyear = models.IntegerField(blank=True, null=True, verbose_name='Year of Birth')
+    diedyear = models.IntegerField(blank=True, null=True, verbose_name='Year of Death')
+    country = models.ForeignKey('Country', blank=True, null=True, related_name="authors")
+    comments = models.TextField(blank=True, null=True)
 
     class Meta:
         unique_together = ('surname', 'given')
@@ -53,6 +57,16 @@ class Author(models.Model):
             return u'%s, %s' % (self.surname, self.given)
         else:
             return u'%s' % self.surname
+        
+class Country(models.Model):
+    name = models.CharField(max_length=48)
+    isocode = models.CharField(max_length=3)
+
+    class Meta:
+        ordering = ['name']
+
+    def __unicode__(self):
+        return u'%s (%s)' % (self.name, self.code)
 
 class Instrument(models.Model):
     name = models.CharField(max_length=48)

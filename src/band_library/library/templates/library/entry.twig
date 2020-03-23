@@ -4,6 +4,23 @@
     <title>Entry: {{entry.title}}</title>
 {% endblock %}
 {% block main %}
+    <form class="form-inline" action='/library/'>
+        Keywords: <input class="form-control" type="text" name="words" value="{{thewords}}"> 
+        Category: 
+        <select class="form-control" name="category">
+            <option value="">All</option>
+            {% for opt in categories %}
+                {# must have the same integer type #}
+                {% if thecat == opt.id %}
+                    <option selected value="{{opt.id}}">{{opt.label}}</option>
+                {% else %}
+                    <option value="{{opt.id}}">{{opt.label}}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+        <input class="btn btn-primary" type="submit" value="Search Again">
+    </form>
+    <hr/>
     <h2>Library entry: {{ entry.title }}</h2>
     {% if can_edit %}
         <a href="/admin/library/entry/{{entry.id}}/change">Edit this entry</a>

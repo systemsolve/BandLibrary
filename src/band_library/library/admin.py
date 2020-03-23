@@ -8,6 +8,7 @@ from models import Category
 from models import Entry
 from models import Instrument
 from models import Program
+from models import Country
 import sys
 
 class AdminImageWidget(AdminFileWidget):
@@ -59,7 +60,7 @@ class EntryAdmin(admin.ModelAdmin):
     
     
 class AuthorAdmin(admin.ModelAdmin):
-    list_display = ('surname', 'given')
+    list_display = ('surname', 'given', 'country', 'bornyear', 'diedyear')
     search_fields = ['surname', 'given']
 
 
@@ -68,3 +69,4 @@ admin.site.register(Author, AuthorAdmin)
 admin.site.register(Program)
 admin.site.register(Category)
 admin.site.register(Instrument)
+admin.site.register(Country)

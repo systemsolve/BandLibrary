@@ -43,7 +43,7 @@ def is_number(zz):
 @login_required
 def entry(request, item):
     entry = Entry.objects.filter(id__exact=item).first()
-    return render(request, 'library/entry.twig', {'entry': entry, "can_edit": request.user.is_authenticated and request.user.is_superuser})
+    return render(request, 'library/entry.twig', {'entry': entry, 'categories': Category.objects.all(), "can_edit": request.user.is_authenticated and request.user.is_superuser})
 
 
 @login_required

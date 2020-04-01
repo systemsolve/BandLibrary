@@ -5,6 +5,7 @@
 {% block main %}
         
         <h1>Welcome to the Oakleigh Brass library catalogue</h1>
+        {% if not limited %}
         <form class="form-inline" action='/library/'>
             Keywords: <input class="form-control" type="text" name="words" value="{{thewords}}"> 
             Category: 
@@ -21,8 +22,11 @@
             </select>
             <input class="btn btn-primary" type="submit" value="Search Music">
         </form>
+        {% endif %}
         <h2><a href='/library/'>Full Listing</a></h2>
+        {% if user.is_staff %}
         <p><a href='/admin/'>Admin: authorised users only</a></p>
+        {% endif %}
         <hr>
         <a href='/logout'>Log out</a>
         

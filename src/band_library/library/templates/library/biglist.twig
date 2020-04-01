@@ -15,7 +15,7 @@
     <div class='row' id='nav'>
         <h3 class='col-md-4'><a href='/'>HOME</a></h3>
     </div>
-
+    {% if not limited %}
     <div id="controls">
         <form class="form-inline" action=''>
             Keywords: <input class="form-control" type="text" name="words" value="{{thewords}}"> 
@@ -34,6 +34,7 @@
             <input class="btn btn-primary" type="submit" value="Search Music">
         </form>
     </div>
+    {% endif %}
     <div id="results">
         {% render_table entries 'django_tables2/bootstrap-responsive.html' %}
     </div>

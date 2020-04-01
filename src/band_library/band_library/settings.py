@@ -139,3 +139,4 @@ BL_BASEDIR = '/Users/david/src/BandLibrary'
 BL_MEDIADIR = os.path.join(BL_BASEDIR, 'media')
 BL_CACHEDIR = os.path.join(BL_BASEDIR, 'mediacache')
 MEDIA_ROOT = BL_MEDIADIR
+MEDIA_URL = '/library/pagefile/'

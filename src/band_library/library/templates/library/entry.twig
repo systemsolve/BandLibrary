@@ -4,6 +4,8 @@
     <title>Entry: {{entry.title}}</title>
 {% endblock %}
 {% block main %}
+    {% if not limited %}
+    <div class="searcher" style="margin-top: 20px;">
     <form class="form-inline" action='/library/'>
         Keywords: <input class="form-control" type="text" name="words" value="{{thewords}}"> 
         Category: 
@@ -20,7 +22,11 @@
         </select>
         <input class="btn btn-primary" type="submit" value="Search Again">
     </form>
+    </div>
     <hr/>
+    {% else %}
+        <h1><a href='/library/'>Full List</a></h1>
+    {% endif %}
     <h2>Library entry: {{ entry.title }}</h2>
     {% if can_edit %}
         <a href="/admin/library/entry/{{entry.id}}/change">Edit this entry</a>

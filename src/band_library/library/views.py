@@ -1,7 +1,7 @@
 import datetime
 from django.conf import settings
 from django.db.models import Q, IntegerField
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth import authenticate, login, logout
 from django.db.models.functions import Cast
 from django.http import HttpResponse
@@ -42,8 +42,20 @@ def is_number(zz):
 
 @login_required
 def entry(request, item):
-    entry = Entry.objects.filter(id__exact=item).first()
-    return render(request, 'library/entry.twig', {'entry': entry, 'categories': Category.objects.all(), "can_edit": request.user.is_authenticated and request.user.is_superuser})
+    limited = False
+    limitcat = None
+    if not request.user.is_staff and request.user.has_perm('library.march_only'):
+        limited = True
+        limitcat = 'M'
+    
+    if limited:
+        entry = Entry.objects.filter(id__exact=item, category__code=limitcat).first()
+        categories = None
+    else:
+        entry = Entry.objects.filter(id__exact=item).first()
+        categories = Category.objects.all();
+    
+    return render(request, 'library/entry.twig', {'entry': entry, 'categories': categories, "can_edit": request.user.is_authenticated and request.user.is_staff, "limited": limited})
 
 
 @login_required
@@ -52,28 +64,38 @@ def index(request):
     thewords = ""
     thecat = ""
     entries = Entry.objects
-    if 'words' in request.GET:
-        www = request.GET['words'].strip()
-        if www:
-            wfilter = (Q(title__icontains=www) | Q(composer__given__icontains=www) | Q(composer__surname__icontains=www))
-            fff = fff & wfilter
-            thewords = www
+    limited = False
+    limitcat = None
+    print >> sys.stderr, "INDEX USER %s %s" % (str(request.user), str(request.user.user_permissions))
+    if not request.user.is_staff and request.user.has_perm('library.march_only'):
+        limited = True
+        limitcat = 'M'
+        
+    if limited:
+        fff = Q(category__code__exact=limitcat)
+    else:
+        if 'words' in request.GET:
+            www = request.GET['words'].strip()
+            if www:
+                wfilter = (Q(title__icontains=www) | Q(composer__given__icontains=www) | Q(composer__surname__icontains=www))
+                fff = fff & wfilter
+                thewords = www
 
-    if 'category' in request.GET:
-        www = request.GET['category']
-        if www and is_number(www):
-            cfilter = (Q(category__exact=www))
-            fff = fff & cfilter
-            thecat = int(www)
+        if 'category' in request.GET:
+            www = request.GET['category']
+            if www and is_number(www):
+                cfilter = (Q(category__exact=www))
+                fff = fff & cfilter
+                thecat = int(www)
 
     if fff:
         table = EntryTable(entries.filter(fff))
     else:
         table = EntryTable(entries.all())
-    if not request.user.has_module_perms('library'):
+    if not request.user.is_staff:
         table.exclude = ('id', 'comments', 'callno', 'added', 'duration')
     RequestConfig(request, paginate={'per_page': 50}).configure(table)    
-    return render(request, 'library/biglist.twig', {'entries': table, 'categories': Category.objects.all(), 'thewords': thewords, 'thecat': thecat})
+    return render(request, 'library/biglist.twig', {'entries': table, 'categories': Category.objects.all(), 'thewords': thewords, 'thecat': thecat, 'limited': limited})
 
 #basedir = '/Users/david/src/BandLibrary'
 #mediadir = os.path.join(basedir, 'media')
@@ -94,6 +116,19 @@ def chip(request, item):
     fname = entry.media.name
     res = '-r 16'
     return makeimage(fname, res, "chip-")
+
+@permission_required('library.change_entry', login_url='/')
+def pagefile(request, name):
+    fullpath = os.path.join(mediadir, name)
+    print >> sys.stderr, "pagefile %s" % fullpath
+    
+    ffc = open(fullpath)
+    response = HttpResponse(ffc.read(), content_type="application/pdf")
+    response['Cache-Control'] = "public"
+    
+    modtime = os.path.getmtime(fullpath)
+    response['Last-Modified'] = datetime.datetime.utcfromtimestamp(modtime).strftime("%a, %d %b %y %H:%M:%S GMT")
+    return response
 
 def makeimage(fname, res, prefix):
     target = prefix + fname
@@ -133,7 +168,17 @@ def top(request):
 
             return render(request, 'library/login.twig')
     
-    return render(request, 'library/home.twig', {'categories': Category.objects.all()})
+    limited = False
+    limitcat = None
+    print >> sys.stderr, "HOME USER %s %s" % (str(request.user), str(request.user.user_permissions.all()))
+    if not request.user.is_staff and request.user.has_perm('library.march_only'):
+        limited = True
+        limitcat = 'M'
+        categories = Category.objects.filter(code=limitcat)
+    else:
+        categories = Category.objects.all()
+    
+    return render(request, 'library/home.twig', {'categories': categories, 'limited': limited})
 
 def logout_view(request):
     logout(request)

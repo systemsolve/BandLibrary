@@ -8,7 +8,7 @@ class LabelField(models.CharField):
         if value is None:
             return value
         return value.lstrip("0")
-    
+
     def get_prep_value(self, value):
         value = super(LabelField, self).get_prep_value(value)
         value = "00000000000" + value
@@ -36,6 +36,9 @@ class Entry(models.Model):
         #unique_together = ('callno', 'category')
         verbose_name_plural = "Entries"
         ordering = ['title','composer__surname']
+        permissions = [
+            ("march_only", "Can only see marches.")
+        ]
 
     def __unicode__(self):
         return u'%s (%s,%s)' % (self.title, self.category.code, self.callno)
@@ -57,7 +60,7 @@ class Author(models.Model):
             return u'%s, %s' % (self.surname, self.given)
         else:
             return u'%s' % self.surname
-        
+
 class Country(models.Model):
     name = models.CharField(max_length=48)
     isocode = models.CharField(max_length=3)

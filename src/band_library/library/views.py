@@ -4,17 +4,18 @@ from django.db.models import Q, IntegerField
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth import authenticate, login, logout
 from django.db.models.functions import Cast
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
 from django.shortcuts import render, redirect
 from django.utils.safestring import mark_safe
 import django_tables2 as tables
 from django_tables2 import RequestConfig
 from django_tables2.utils import A
-from models import Category
-from models import Entry
+from .models import Category
+from .models import Entry
 import os
 import subprocess
 import sys
+from .utilx import error_log
 
 class EntryTable(tables.Table):
     title = tables.LinkColumn('entry', args=[A('pk')])
@@ -66,7 +67,7 @@ def index(request):
     entries = Entry.objects
     limited = False
     limitcat = None
-    print >> sys.stderr, "INDEX USER %s %s" % (str(request.user), str(request.user.user_permissions))
+    error_log("INDEX USER %s %s" % (str(request.user), str(request.user.user_permissions)))
     if not request.user.is_staff and request.user.has_perm('library.march_only'):
         limited = True
         limitcat = 'M'
@@ -120,9 +121,9 @@ def chip(request, item):
 @permission_required('library.change_entry', login_url='/')
 def pagefile(request, name):
     fullpath = os.path.join(mediadir, name)
-    print >> sys.stderr, "pagefile %s" % fullpath
+    error_log("pagefile %s" % fullpath)
     
-    ffc = open(fullpath)
+    ffc = open(fullpath, "rb")
     response = HttpResponse(ffc.read(), content_type="application/pdf")
     response['Cache-Control'] = "public"
     
@@ -133,16 +134,16 @@ def pagefile(request, name):
 def makeimage(fname, res, prefix):
     target = prefix + fname
     try:
-        print >> sys.stderr, "open %s" % os.path.join(cachedir, target + ".jpg")
-        ffc = open(os.path.join(cachedir, target + ".jpg"))
+#        error_log("open %s" % os.path.join(cachedir, target + ".jpg"))
+        ffc = open(os.path.join(cachedir, target + ".jpg"), "rb")
     except:
-        print >> sys.stderr, "convert %s" % os.path.join(mediadir, fname)
+        error_log("convert %s" % os.path.join(mediadir, fname))
         command = "pdftoppm -singlefile %s -jpeg \"%s\" \"%s\"" % (res, os.path.join(mediadir, fname), os.path.join(cachedir, target))
-        print >> sys.stderr, "command %s" % command
+        error_log("command %s" % command)
         subprocess.call(command, shell=True)
-        ffc = open(os.path.join(cachedir, target + ".jpg"))
+        ffc = open(os.path.join(cachedir, target + ".jpg"), "rb")
         
-    response = HttpResponse(ffc.read(), content_type="image/jpeg")
+    response = FileResponse(ffc, content_type="image/jpeg", charset='C')
     response['Cache-Control'] = "public"
     
     modtime = os.path.getmtime(os.path.join(cachedir, target + ".jpg"))
@@ -151,7 +152,7 @@ def makeimage(fname, res, prefix):
 
 
 def top(request):    
-    if not request.user.is_authenticated():
+    if not request.user.is_authenticated:
         if request.method == 'POST':
             if 'username' in request.POST:
                 username = request.POST['username'].strip()
@@ -170,7 +171,7 @@ def top(request):
     
     limited = False
     limitcat = None
-    print >> sys.stderr, "HOME USER %s %s" % (str(request.user), str(request.user.user_permissions.all()))
+    error_log("HOME USER %s %s" % (str(request.user), str(request.user.user_permissions.all())))
     if not request.user.is_staff and request.user.has_perm('library.march_only'):
         limited = True
         limitcat = 'M'

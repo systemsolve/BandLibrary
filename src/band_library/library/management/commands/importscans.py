@@ -4,6 +4,7 @@
 import sys, os, csv
 from django.core.management.base import BaseCommand, CommandError
 from library.models import Entry, Author, Category, Instrument
+from library.utilx import error_log
 
 catcache = {}
 
@@ -32,16 +33,16 @@ class Command(BaseCommand):
                 if eee:
                     matched = True
                     if not eee.media:
-                        print >>sys.stderr, "IMPORT: %s" % str(eee)
+                        error_log("IMPORT: %s" % str(eee))
                         eee.media = os.path.basename(prow)
                         eee.save()                        
                     else:
-                        print >>sys.stderr, "MATCH: %s" % str(eee)
+                        error_log("MATCH: %s" % str(eee))
                     break
                 else:
                     checks.append(bases[0])
                     
             if not matched:
-                print >>sys.stderr, "UNMATCHED: '%s'" % str(checks)
+                error_log("UNMATCHED: '%s'" % str(checks))
             
             

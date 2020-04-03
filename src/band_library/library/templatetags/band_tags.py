@@ -15,8 +15,8 @@ class Incipit(ImageSpec):
     
 @register.filter(name='incipit')
 def makethumb(value):
-    ffc = open(os.path.join(mediadir, value + ".jpg"))
+    ffc = open(os.path.join(mediadir, value + ".jpg"), "rb")
     if not ffc:
-        fff = open(os.path.join(mediadir, value))
+        fff = open(os.path.join(mediadir, value), "rb")
     iii = Incipit(source=fff)    
     return iii.generate()

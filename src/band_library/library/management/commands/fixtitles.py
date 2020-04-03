@@ -4,6 +4,7 @@
 import sys, os, csv
 from django.core.management.base import BaseCommand, CommandError
 from library.models import Entry, Author, Category, Instrument
+from library.utilx import error_log
 
 catcache = {}
 
@@ -22,7 +23,7 @@ class Command(BaseCommand):
         for eeeo in eee:
             eeea = eeeo.title.split();
             newtitle = ' '.join(eeea[1:]) + ", The"
-            print >>sys.stderr, "Change: %s to %s" % (eeeo.title, newtitle)
+            error_log("Change: %s to %s" % (eeeo.title, newtitle))
             eeeo.title = newtitle
             eeeo.save()
             
@@ -30,7 +31,7 @@ class Command(BaseCommand):
         for eeeo in eee:
             eeea = eeeo.title.split();
             newtitle = ' '.join(eeea[1:]) + ", A"
-            print >>sys.stderr, "Change: %s to %s" % (eeeo.title, newtitle)
+            error_log("Change: %s to %s" % (eeeo.title, newtitle))
             eeeo.title = newtitle
             eeeo.save()
 

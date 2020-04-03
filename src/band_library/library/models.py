@@ -1,6 +1,7 @@
-from __future__ import unicode_literals
+
 
 from django.db import models
+from django.db.models.deletion import CASCADE
 
 class LabelField(models.CharField):
 
@@ -23,12 +24,12 @@ class Entry(models.Model):
     title = models.CharField(max_length=200)
     callno = LabelField(max_length=12, verbose_name="label", db_column="label")
     duration = models.CharField(max_length=8, default="0:0")
-    composer = models.ForeignKey('Author', blank=True, null=True, related_name="compositions")
-    arranger = models.ForeignKey('Author', blank=True, null=True, related_name="arrangements")
-    category = models.ForeignKey('Category')
+    composer = models.ForeignKey('Author', blank=True, null=True, related_name="compositions", on_delete=CASCADE)
+    arranger = models.ForeignKey('Author', blank=True, null=True, related_name="arrangements", on_delete=CASCADE)
+    category = models.ForeignKey('Category', on_delete=CASCADE)
     comments = models.TextField(blank=True, null=True)
     added = models.DateField(verbose_name='Date added', auto_now=True)
-    instrument = models.ForeignKey("Instrument", blank=True, null=True)
+    instrument = models.ForeignKey("Instrument", blank=True, null=True, on_delete=CASCADE)
     #media = models.CharField(max_length=256, blank=True, null=True)
     media = models.FileField(upload_to='', max_length=256, blank=True, null=True)
 
@@ -40,26 +41,26 @@ class Entry(models.Model):
             ("march_only", "Can only see marches.")
         ]
 
-    def __unicode__(self):
-        return u'%s (%s,%s)' % (self.title, self.category.code, self.callno)
+    def __str__(self):
+        return '%s (%s,%s)' % (self.title, self.category.code, self.callno)
 
 class Author(models.Model):
     surname = models.CharField(max_length=32)
     given = models.CharField(max_length=48, blank=True, null=True)
     bornyear = models.IntegerField(blank=True, null=True, verbose_name='Year of Birth')
     diedyear = models.IntegerField(blank=True, null=True, verbose_name='Year of Death')
-    country = models.ForeignKey('Country', blank=True, null=True, related_name="authors")
+    country = models.ForeignKey('Country', blank=True, null=True, related_name="authors", on_delete=CASCADE)
     comments = models.TextField(blank=True, null=True)
 
     class Meta:
         unique_together = ('surname', 'given')
         ordering = ['surname', 'given']
 
-    def __unicode__(self):
+    def __str__(self):
         if self.given:
-            return u'%s, %s' % (self.surname, self.given)
+            return '%s, %s' % (self.surname, self.given)
         else:
-            return u'%s' % self.surname
+            return '%s' % self.surname
 
 class Country(models.Model):
     name = models.CharField(max_length=48)
@@ -68,8 +69,8 @@ class Country(models.Model):
     class Meta:
         ordering = ['name']
 
-    def __unicode__(self):
-        return u'%s (%s)' % (self.name, self.code)
+    def __str__(self):
+        return '%s (%s)' % (self.name, self.code)
 
 class Instrument(models.Model):
     name = models.CharField(max_length=48)
@@ -77,8 +78,8 @@ class Instrument(models.Model):
     class Meta:
         ordering = ['name']
 
-    def __unicode__(self):
-        return u'%s' % (self.name)
+    def __str__(self):
+        return '%s' % (self.name)
 
 class Category(models.Model):
     label = models.CharField(max_length=32)
@@ -88,16 +89,16 @@ class Category(models.Model):
         verbose_name_plural = "Categories"
         ordering = ['label']
 
-    def __unicode__(self):
-        return u'%s (%s)' % (self.label, self.code)
+    def __str__(self):
+        return '%s (%s)' % (self.label, self.code)
 
 class Program(models.Model):
     included = models.DateField()
     comments = models.TextField(blank=True, null=True)
-    entry = models.ForeignKey('Entry', related_name="programmed")
+    entry = models.ForeignKey('Entry', related_name="programmed", on_delete=CASCADE)
 
-    def __unicode__(self):
-        return u'%s' % (self.included)
+    def __str__(self):
+        return '%s' % (self.included)
 
 
 

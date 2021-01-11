@@ -26,6 +26,28 @@ from .models import Condition
 import sys
 from .utilx  import error_log
 
+import csv
+from django.http import HttpResponse
+
+class ExportCsvMixin:
+    def export_as_csv(self, request, queryset):
+
+        meta = self.model._meta
+        field_names = [field.name for field in meta.fields]
+        field_headings = [(field.verbose_name if field.verbose_name else field.name).capitalize() for field in meta.fields]
+
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename={}.csv'.format(meta)
+        writer = csv.writer(response)
+
+        writer.writerow(field_headings)
+        for obj in queryset:
+            row = writer.writerow([getattr(obj, field) for field in field_names])
+
+        return response
+
+    export_as_csv.short_description = "CSV of Selected"
+
 class AdminImageWidget(AdminFileWidget):
     def render(self, name, value, attrs=None):
         error_log("IMAGE WIDGET: %s %s" % (name, str(self)))
@@ -60,14 +82,16 @@ class EmptyMediaFilter(admin.SimpleListFilter):
                 return queryset.filter(media__isnull=False)
         return queryset
 
-class EntryAdmin(admin.ModelAdmin):
-    list_display = ('title', 'category', 'callno', 'composer', 'arranger', 'source', 'publisher', 'pubname', 'pubyear', 'image_present','instrument','digitised')
-    list_filter = ('category', 'genre','composer__country', 'source', EmptyMediaFilter)
+class EntryAdmin(admin.ModelAdmin, ExportCsvMixin):
+    list_display = ('title', 'category', 'callno', 'composer', 'arranger', 'source', 'publisher', 'pubname', 'pubyear', 'estdecade', 'pagecount', 'condition', 'platecode', 'image_present','instrument','incomplete')
+    list_filter = ('category', 'genre','composer__country', 'source', EmptyMediaFilter, ('provider', admin.RelatedOnlyFieldListFilter), 'incomplete')
     search_fields = ['title', 'composer__given', 'composer__surname', 'arranger__surname','callno','comments']
     readonly_fields = ('image_link', 'image_present')
     save_on_top = True
-    fields = ('title', ('category', 'callno'), 'genre','composer', 'arranger', ('publisher', 'pubyear', 'platecode'), ('pubname', 'pubissue'), ('source','provider'), 'instrument', ('comments','backpage'), ('media','condition','pagecount'), 'image_link', 'digitised')
+    fields = ('title', ('category', 'callno'), 'genre','composer', 'arranger', ('publisher', 'pubyear', 'estdecade', 'platecode'), ('pubname', 'pubissue'), ('source','provider'), 'instrument', ('comments','backpage'), ('media','condition','pagecount','incomplete'), 'image_link', 'digitised')
     autocomplete_fields = ['composer','arranger','provider']
+    actions = ["export_as_csv"]
+
     formfield_overrides = {
         models.TextField: {'widget': Textarea(
               attrs={
@@ -112,12 +136,13 @@ class ProgramAdmin(admin.ModelAdmin):
     save_on_top = True
     filter_horizontal = ['entry']
 
-class AuthorAdmin(admin.ModelAdmin):
+class AuthorAdmin(admin.ModelAdmin, ExportCsvMixin):
     list_display = ('surname', 'given', 'arranger', 'composer', 'provider','country', 'bornyear', 'diedyear','realname')
     search_fields = ['surname', 'given']
     list_filter = ('country',)
     save_on_top = True
     autocomplete_fields = ['realname']
+    actions = ["export_as_csv"]
     formfield_overrides = {
         models.TextField: {'widget': Textarea(
               attrs={

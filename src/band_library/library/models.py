@@ -37,20 +37,22 @@ class Entry(models.Model):
     category = models.ForeignKey('Category', verbose_name='Shelving Category', on_delete=CASCADE)
     genre = models.ForeignKey('Genre', verbose_name='Type/Genre of Work', blank=True, null=True, on_delete=SET_NULL)
     publisher = models.ForeignKey('Publisher', blank=True, null=True, related_name="pubyears", on_delete=CASCADE)
-    pubyear = models.IntegerField(verbose_name='Year of edition', help_text="If year not known, use (e.g.) 1920 for decade", blank=True, null=True)
+    pubyear = models.IntegerField(verbose_name='Year of edition', blank=True, null=True)
+    estdecade = models.IntegerField(verbose_name='Est. Decade', help_text="If exact year not known", blank=True, null=True)
     pubname = models.ForeignKey('Publication', verbose_name='Publication', blank=True, null=True, related_name="publications", on_delete=CASCADE)
     pubissue = models.CharField(max_length=24,verbose_name='Vol/Issue', blank=True, null=True)
     platecode = models.CharField(max_length=12, blank=True, null=True)
     comments = models.TextField(blank=True, null=True)
     backpage = models.TextField(verbose_name='Back page comments (e.g. ads)', blank=True, null=True)
     added = models.DateField(verbose_name='Date added', auto_now=True)
-    instrument = models.ForeignKey("Instrument", blank=True, null=True, on_delete=SET_NULL)
+    instrument = models.ForeignKey("Instrument", blank=True, null=True, on_delete=CASCADE)
     #media = models.CharField(max_length=256, blank=True, null=True)
     media = models.FileField(upload_to='', max_length=256, blank=True, null=True)
     source = models.ForeignKey("Source", blank=True, null=True, related_name="+", on_delete=SET_NULL)
     provider = models.ForeignKey('Author', blank=True, null=True, related_name="donations", on_delete=CASCADE)
     digitised = models.BooleanField(default=False)
     condition = models.ForeignKey('Condition', blank=True, null=True, related_name="+", on_delete=CASCADE)
+    incomplete = models.BooleanField(default=False)
 
     class Meta:
         #unique_together = ('callno', 'category')
@@ -74,7 +76,7 @@ class Publication(models.Model):
 
     def __str__(self):
         if self.publisher:
-            return '%s (%s)' % (self.name, self.publisher)
+            return '%s (%s)' % (self.name, self.publisher.name)
         else:
             return '%s ()' % self.name
     

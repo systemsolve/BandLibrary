@@ -12,6 +12,7 @@ from django_tables2 import RequestConfig
 from django_tables2.utils import A
 from .models import Category
 from .models import Entry
+from .models import Genre
 import os
 import subprocess
 import sys
@@ -20,19 +21,19 @@ from .utilx import error_log
 class EntryTable(tables.Table):
     title = tables.LinkColumn('entry', args=[A('pk')])
     media = tables.LinkColumn('entry', args=[A('pk')])
-    
+
     def render_media(self, value, record):
         if value:
             return mark_safe("<img width=40 src='chip/%s'>" % record.id)
         else:
             return ""
-        
+
     class Meta:
         model = Entry
         # add class="paleblue" to <table> tag
         attrs = {'class': 'paleblue'}
         exclude = ('id', 'comments')
-        sequence = ('title', 'category', 'callno', 'composer', 'arranger', 'instrument', 'media')
+        sequence = ('title', 'category', 'genre', 'callno', 'composer', 'arranger', 'instrument', 'media')
 
 def is_number(zz):
     try:
@@ -48,14 +49,14 @@ def entry(request, item):
     if not request.user.is_staff and request.user.has_perm('library.march_only'):
         limited = True
         limitcat = 'M'
-    
+
     if limited:
         entry = Entry.objects.filter(id__exact=item, category__code=limitcat).first()
         categories = None
     else:
         entry = Entry.objects.filter(id__exact=item).first()
         categories = Category.objects.all();
-    
+
     return render(request, 'library/entry.twig', {'entry': entry, 'categories': categories, "can_edit": request.user.is_authenticated and request.user.is_staff, "limited": limited})
 
 
@@ -64,6 +65,7 @@ def index(request):
     fff = Q()
     thewords = ""
     thecat = ""
+    thegenre = ""
     entries = Entry.objects
     limited = False
     limitcat = None
@@ -71,14 +73,19 @@ def index(request):
     if not request.user.is_staff and request.user.has_perm('library.march_only'):
         limited = True
         limitcat = 'M'
-        
+
     if limited:
-        fff = Q(category__code__exact=limitcat)
+        fff = Q(category__code__exact=limitcat)&Q(incomplete=False)
     else:
+        if not 'incomplete' in request.GET:
+            incomplete = False
+            fff = fff & Q(incomplete=False)
+        else:
+            incomplete = True
         if 'words' in request.GET:
             www = request.GET['words'].strip()
             if www:
-                wfilter = (Q(title__icontains=www) | Q(composer__given__icontains=www) | Q(composer__surname__icontains=www))
+                wfilter = (Q(title__icontains=www) | Q(composer__given__icontains=www) | Q(composer__surname__icontains=www)| Q(arranger__given__icontains=www) | Q(arranger__surname__icontains=www))
                 fff = fff & wfilter
                 thewords = www
 
@@ -89,14 +96,30 @@ def index(request):
                 fff = fff & cfilter
                 thecat = int(www)
 
+        if 'genre' in request.GET:
+            www = request.GET['genre']
+            if www and is_number(www):
+                cfilter = (Q(genre__exact=www))
+                fff = fff & cfilter
+                thegenre = int(www)
+
     if fff:
         table = EntryTable(entries.filter(fff))
     else:
         table = EntryTable(entries.all())
     if not request.user.is_staff:
-        table.exclude = ('id', 'comments', 'callno', 'added', 'duration')
-    RequestConfig(request, paginate={'per_page': 50}).configure(table)    
-    return render(request, 'library/biglist.twig', {'entries': table, 'categories': Category.objects.all(), 'thewords': thewords, 'thecat': thecat, 'limited': limited})
+        table.exclude = ('id', 'comments', 'callno', 'added', 'duration','incomplete')
+    RequestConfig(request, paginate={'per_page': 50}).configure(table)
+    return render(request, 'library/biglist.twig', {
+        'entries': table,
+        'categories': Category.objects.all(),
+        'genres': Genre.objects.all(),
+        'thewords': thewords,
+        'thegenre': thegenre,
+        'thecat': thecat,
+        'limited': limited,
+        'incomplete': incomplete
+    })
 
 #basedir = '/Users/david/src/BandLibrary'
 #mediadir = os.path.join(basedir, 'media')
@@ -122,11 +145,11 @@ def chip(request, item):
 def pagefile(request, name):
     fullpath = os.path.join(mediadir, name)
     error_log("pagefile %s" % fullpath)
-    
+
     ffc = open(fullpath, "rb")
     response = HttpResponse(ffc.read(), content_type="application/pdf")
     response['Cache-Control'] = "public"
-    
+
     modtime = os.path.getmtime(fullpath)
     response['Last-Modified'] = datetime.datetime.utcfromtimestamp(modtime).strftime("%a, %d %b %y %H:%M:%S GMT")
     return response
@@ -142,23 +165,23 @@ def makeimage(fname, res, prefix):
         error_log("command %s" % command)
         subprocess.call(command, shell=True)
         ffc = open(os.path.join(cachedir, target + ".jpg"), "rb")
-        
+
     response = FileResponse(ffc, content_type="image/jpeg", charset='C')
     response['Cache-Control'] = "public"
-    
+
     modtime = os.path.getmtime(os.path.join(cachedir, target + ".jpg"))
     response['Last-Modified'] = datetime.datetime.utcfromtimestamp(modtime).strftime("%a, %d %b %y %H:%M:%S GMT")
     return response
 
 
-def top(request):    
+def top(request):
     if not request.user.is_authenticated:
         if request.method == 'POST':
             if 'username' in request.POST:
                 username = request.POST['username'].strip()
             if 'password' in request.POST:
                 password = request.POST['password'].strip()
-                
+
             user = authenticate(request, username=username, password=password)
         else:
             user = None
@@ -168,7 +191,7 @@ def top(request):
         # Return an 'invalid login' error message.
 
             return render(request, 'library/login.twig')
-    
+
     limited = False
     limitcat = None
     error_log("HOME USER %s %s" % (str(request.user), str(request.user.user_permissions.all())))
@@ -178,8 +201,10 @@ def top(request):
         categories = Category.objects.filter(code=limitcat)
     else:
         categories = Category.objects.all()
-    
-    return render(request, 'library/home.twig', {'categories': categories, 'limited': limited})
+
+    genres = Genre.objects.all()
+
+    return render(request, 'library/home.twig', {'categories': categories, 'genres': genres, 'limited': limited})
 
 def logout_view(request):
     logout(request)

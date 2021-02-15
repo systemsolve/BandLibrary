@@ -18,8 +18,20 @@
     {% if not limited %}
     <div id="controls">
         <form class="form-inline" action=''>
-            Keywords: <input class="form-control" type="text" name="words" value="{{thewords}}"> 
-            Category: 
+            Keywords: <input class="form-control" type="text" name="words" value="{{thewords}}">
+            Genre: 
+            <select class="form-control" name="genre">
+                <option value="">All</option>
+                {% for opt in genres %}
+                    {# must have the same integer type #}
+                    {% if thegenre == opt.id %}
+                        <option selected value="{{opt.id}}">{{opt.label}}</option>
+                    {% else %}
+                        <option value="{{opt.id}}">{{opt.label}}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+            Shelving category: 
             <select class="form-control" name="category">
                 <option value="">All</option>
                 {% for opt in categories %}
@@ -31,11 +43,12 @@
                     {% endif %}
                 {% endfor %}
             </select>
+            include incomplete items <input type="checkbox" value="1" name="incomplete">
             <input class="btn btn-primary" type="submit" value="Search Music">
         </form>
     </div>
     {% endif %}
     <div id="results">
-        {% render_table entries 'django_tables2/bootstrap-responsive.html' %}
+        {% render_table entries 'django_tables2/bootstrap4.html' %}
     </div>
 {% endblock %}

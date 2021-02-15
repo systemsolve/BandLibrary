@@ -78,10 +78,10 @@ WSGI_APPLICATION = 'band_library.wsgi.application'
 # https://docs.djangoproject.com/en/1.9/ref/settings/#databases
 
 DATABASES = {
-    'devel': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    },
+#    'devel': {
+#        'ENGINE': 'django.db.backends.sqlite3',
+#        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+#    },
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'oblibrary',
@@ -142,3 +142,4 @@ BL_MEDIADIR = os.path.join(BL_BASEDIR, 'media')
 BL_CACHEDIR = os.path.join(BL_BASEDIR, 'mediacache')
 MEDIA_ROOT = BL_MEDIADIR
 MEDIA_URL = '/library/pagefile/'
+DJANGO_TABLES2_TEMPLATE = "django_tables2/bootstrap4.html"

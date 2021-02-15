@@ -27,7 +27,7 @@
     {% else %}
         <h1><a href='/library/'>Full List</a></h1>
     {% endif %}
-    <h2>Library entry: {{ entry.title }}</h2>
+    <h2>{{ entry.title }}{% if entry.incomplete %} <span class="badge badge-warning">incomplete</span>{% endif %}</h2>
     {% if can_edit %}
         <a href="/admin/library/entry/{{entry.id}}/change">Edit this entry</a>
     {% endif %}
@@ -35,32 +35,60 @@
         <table class="table table-condensed">
             <tbody>
                 <tr>
-                    <td>Category:</td>
-                    <td>{{ entry.category }}</td>
+                    <td>Genre/Type:</td>
+                    <td>{{ entry.genre }}</td>
+                    
                 </tr>
                 {% if can_edit %}
                 <tr>
-                    <td>Label/Call no.:</td>
-                    <td>{{ entry.callno }}</td>
+                    <td>Location:</td>
+                    <td>{{ entry.category }} {{ entry.callno }}</td>
                 </tr>
                 {% endif %}
                 <tr>
                     <td>Composer:</td>
-                    <td>{{ entry.composer.given }} {{ entry.composer.surname }}</td>
+                    <td>{{ entry.composer.given }} {{ entry.composer.surname }}
+                    {% if entry.composer.realname %}
+                        (real name: {{ entry.composer.realname.given }} {{ entry.composer.realname.surname }})
+                    {% endif %}
+                    </td>
                 </tr>
                 <tr>
                     <td>Arranger:</td>
-                    <td>{% if entry.arranger %}{{ entry.arranger.given }} {{ entry.arranger.surname }}{% endif %}</td>
+                    <td>{% if entry.arranger %}{{ entry.arranger.given }} {{ entry.arranger.surname }}
+                        {% if entry.arranger.realname %}
+                            (real name: {{ entry.arranger.realname.given }} {{ entry.arranger.realname.surname }})
+                        {% endif %}
+                    {% endif %}</td>
+                </tr>
+                <tr>
+                    <td>Publisher:</td>
+                    <td>{{ entry.publisher }}{% if entry.pubname %} ({{ entry.pubname }}{% if entry.pubissue %} issue {{ entry.pubissue }}{% endif %}){% endif %}</td>
+                </tr>
+                <tr>
+                    <td>Condition:</td>
+                    <td>{{ entry.condition }}</td>
                 </tr>
                 {% if entry.comments %}
                     <tr>
                         <td>Comments:</td>
-                        <td>{{ entry.comments }}</td>
+                        <td>{{ entry.comments|linebreaks }}</td>
                     </tr>
                 {% endif %}
+                {% for also in entry.related_entries.all %}
+                    <tr>
+                        {% if also.entry %}
+                        <td>Related entry:</td>
+                        <td><a href="../{{also.entry.id}}">{{ also.entry.title }}</a></td>
+                        {% else %}
+                        <td>Web page:</td>
+                        <td><a href="{{ also.url }}" target="_blank">{{ also.url }}</a></td>
+                        {% endif %}
+                    </tr>
+                {% endfor %}
                 {% if entry.media %}
                     <tr>                        
-                        <td colspan="2">
+                        <td colspan="4">
                             <img width=400 src='../../incipit/{{ entry.id }}'>
                         </td>
                     </tr>

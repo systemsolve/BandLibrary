@@ -19,6 +19,10 @@ from django.http import HttpResponse
 
 from library import views
 
+admin.site.site_header = "Oakleigh Brass Library Admin"
+admin.site.site_title = "Oakleigh Brass Library and Archive Admin"
+admin.site.index_title = "Welcome to Oakleigh Brass Library and Archive"
+
 urlpatterns = [
     url(r'^$', views.top, name='home'),
     url(r'^logout$', views.logout_view, name='logout'),

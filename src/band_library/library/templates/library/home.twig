@@ -8,6 +8,18 @@
         {% if not limited %}
         <form class="form-inline" action='/library/'>
             Keywords: <input class="form-control" type="text" name="words" value="{{thewords}}"> 
+            Genre: 
+            <select class="form-control" name="genre">
+                <option value="">All</option>
+                {% for opt in genres %}
+                    {# must have the same integer type #}
+                    {% if thegenre == opt.id %}
+                        <option selected value="{{opt.id}}">{{opt.label}}</option>
+                    {% else %}
+                        <option value="{{opt.id}}">{{opt.label}}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
             Category: 
             <select class="form-control" name="category">
                 <option value="">All</option>

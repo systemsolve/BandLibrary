@@ -23,6 +23,10 @@ from .models import Publisher
 from .models import Genre
 from .models import Publication
 from .models import Condition
+from .models import Completeness
+from .models import SeeAlso
+from .models import Tonality, Material
+from .models import Asset, AssetType, AssetCondition, AssetMaker, AssetModel
 import sys
 from .utilx  import error_log
 
@@ -59,13 +63,18 @@ class AdminImageWidget(AdminFileWidget):
                           (image_url, file_name))
         output.append(super(AdminFileWidget, self).render(name, value, attrs))
         return mark_safe(''.join(output))
-    
+
+class SeeAlsoAdmin(admin.TabularInline):
+    model = SeeAlso
+    extra = 1
+    fk_name = 'source_entry'
+    autocomplete_fields = ['entry']
 
 
 class EmptyMediaFilter(admin.SimpleListFilter):
     title = "Media State"
     parameter_name = "media"
-    
+
     def lookups(self, request, model_admin):
         return (
             ('1', 'Absent', ),
@@ -83,14 +92,15 @@ class EmptyMediaFilter(admin.SimpleListFilter):
         return queryset
 
 class EntryAdmin(admin.ModelAdmin, ExportCsvMixin):
-    list_display = ('title', 'category', 'callno', 'composer', 'arranger', 'source', 'publisher', 'pubname', 'pubyear', 'estdecade', 'pagecount', 'condition', 'platecode', 'image_present','instrument','incomplete')
-    list_filter = ('category', 'genre','composer__country', 'source', EmptyMediaFilter, ('provider', admin.RelatedOnlyFieldListFilter), 'incomplete')
-    search_fields = ['title', 'composer__given', 'composer__surname', 'arranger__surname','callno','comments']
+    list_display = ('title', 'genre', 'category', 'callno', 'composer', 'arranger', 'source', 'publisher', 'pubname', 'pubyear', 'estdecade', 'pagecount', 'condition', 'platecode', 'image_present','instrument','is_complete')
+    list_filter = ('category', 'genre','composer__country', 'source', EmptyMediaFilter, ('provider', admin.RelatedOnlyFieldListFilter), 'incomplete', 'duplicate', 'completeness')
+    search_fields = ['title', 'composer__given', 'composer__surname', 'arranger__surname','callno','comments', 'composer__realname__surname', 'arranger__realname__surname']
     readonly_fields = ('image_link', 'image_present')
     save_on_top = True
-    fields = ('title', ('category', 'callno'), 'genre','composer', 'arranger', ('publisher', 'pubyear', 'estdecade', 'platecode'), ('pubname', 'pubissue'), ('source','provider'), 'instrument', ('comments','backpage'), ('media','condition','pagecount','incomplete'), 'image_link', 'digitised')
+    fields = ('title', ('category', 'callno'), ('genre','key'),'composer', 'arranger', ('publisher', 'pubyear', 'estdecade', 'platecode'), ('pubname', 'pubissue'), ('source','provider'), 'instrument', ('comments','backpage'), 'media',('material','condition','pagecount','incomplete', 'completeness', 'duplicate'), 'image_link', 'digitised')
     autocomplete_fields = ['composer','arranger','provider']
     actions = ["export_as_csv"]
+    inlines = [ SeeAlsoAdmin ]
 
     formfield_overrides = {
         models.TextField: {'widget': Textarea(
@@ -100,7 +110,7 @@ class EntryAdmin(admin.ModelAdmin, ExportCsvMixin):
               })
         },
     }
-    
+
     """
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -113,7 +123,7 @@ class EntryAdmin(admin.ModelAdmin, ExportCsvMixin):
         #error_log("AUTHOR QS: %s" % qs.query)
         return qs
     """
-    
+
     def image_link(self, instance):
         error_log("IMAGE LINK: %s %s" % (str(instance.media), str(instance.id)))
         if instance.media:
@@ -123,6 +133,14 @@ class EntryAdmin(admin.ModelAdmin, ExportCsvMixin):
 
 
     image_link.short_description = "Image Link"
+
+    def is_complete(self, instance):
+
+        return not instance.incomplete       # looks strange - ensures a boolean
+
+
+    is_complete.short_description = "Complete?"
+    is_complete.boolean = True
 
     def image_present(self, instance):
 
@@ -135,6 +153,24 @@ class EntryAdmin(admin.ModelAdmin, ExportCsvMixin):
 class ProgramAdmin(admin.ModelAdmin):
     save_on_top = True
     filter_horizontal = ['entry']
+    
+class AssetAdmin(admin.ModelAdmin, ExportCsvMixin):
+    list_display = ('asset_type', 'allocated', 'manufacturer', 'model', 'identifier')
+    search_fields = ['asset_type__label', 'model__label']
+    list_filter = ('allocated', 'asset_type','manufacturer')
+    save_on_top = True
+    #autocomplete_fields = ['realname']
+    actions = ["export_as_csv"]
+    ordering = ('asset_type__label', 'manufacturer__label')
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(
+              attrs={
+                  'rows': 5,
+                  'cols': 40
+              })
+        },
+    }
+    
 
 class AuthorAdmin(admin.ModelAdmin, ExportCsvMixin):
     list_display = ('surname', 'given', 'arranger', 'composer', 'provider','country', 'bornyear', 'diedyear','realname')
@@ -247,6 +283,15 @@ admin.site.register(Publisher)
 admin.site.register(Publication)
 admin.site.register(Condition)
 admin.site.register(Genre)
+admin.site.register(Completeness)
+admin.site.register(Tonality)
+admin.site.register(Material)
+admin.site.register(Asset, AssetAdmin)
+admin.site.register(AssetType)
+admin.site.register(AssetCondition)
+admin.site.register(AssetMaker)
+admin.site.register(AssetModel)
+#admin.site.register(SeeAlso, SeeAlsoAdmin)
 
 # Re-register UserAdmin
 admin.site.unregister(User)

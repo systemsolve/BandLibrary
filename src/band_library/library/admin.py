@@ -92,8 +92,8 @@ class EmptyMediaFilter(admin.SimpleListFilter):
         return queryset
 
 class EntryAdmin(admin.ModelAdmin, ExportCsvMixin):
-    list_display = ('title', 'genre', 'category', 'callno', 'composer', 'arranger', 'source', 'publisher', 'pubname', 'pubyear', 'estdecade', 'pagecount', 'condition', 'platecode', 'image_present','instrument','is_complete')
-    list_filter = ('category', 'genre','composer__country', 'source', EmptyMediaFilter, ('provider', admin.RelatedOnlyFieldListFilter), 'incomplete', 'duplicate', 'completeness')
+    list_display = ('title', 'genre', 'category', 'callno', 'composer', 'arranger', 'source', 'publisher', 'pubname', 'pubyear', 'estdecade', 'pagecount', 'condition', 'platecode', 'image_present','instrument','key','completeness' )
+    list_filter = ('category', 'genre','composer__country', 'completeness__usable', 'duplicate', 'completeness', ('key', admin.RelatedOnlyFieldListFilter), 'source', EmptyMediaFilter, ('provider', admin.RelatedOnlyFieldListFilter))
     search_fields = ['title', 'composer__given', 'composer__surname', 'arranger__surname','callno','comments', 'composer__realname__surname', 'arranger__realname__surname']
     readonly_fields = ('image_link', 'image_present')
     save_on_top = True
@@ -134,13 +134,13 @@ class EntryAdmin(admin.ModelAdmin, ExportCsvMixin):
 
     image_link.short_description = "Image Link"
 
-    def is_complete(self, instance):
-
-        return not instance.incomplete       # looks strange - ensures a boolean
-
-
-    is_complete.short_description = "Complete?"
-    is_complete.boolean = True
+#    def is_complete(self, instance):
+#
+#        return instance.completeness.usable       # looks strange - ensures a boolean
+#
+#
+#    is_complete.short_description = "Complete?"
+#    is_complete.boolean = True
 
     def image_present(self, instance):
 

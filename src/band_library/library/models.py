@@ -26,6 +26,9 @@ class Source(models.Model):
 
     def __str__(self):
         return '%s' % self.label
+    
+    class Meta:
+        ordering = ('label',)
 
 class Material(models.Model):
     label = models.CharField(max_length=200)
@@ -37,15 +40,20 @@ class Material(models.Model):
 class Completeness(models.Model):
     label = models.CharField(max_length=100)
     description = models.TextField(blank=True,null=True)
+    usable = models.BooleanField(default=False)
 
     def __str__(self):
-        return '%s' % self.label
+        if self.usable:
+            return '%s' % self.label
+        else:
+            return "%s (unusable)" % self.label
 
 class Tonality(models.Model):
     from django.core.validators import MaxValueValidator, MinValueValidator
     MODE = (
         ('maj', 'Major'),
-        ('min', 'Minor')
+        ('min', 'Minor'),
+        ('X', 'N/A')
     )
     ACCTYPE = (
         ('none', '-'),
@@ -60,6 +68,9 @@ class Tonality(models.Model):
         ('G','G'),
         ('A','A'),('Ab','A flat'),
         ('B','B'),('Bb','B flat'),
+        ('X','Not Defined'),
+        ('Y','Ambiguous'),
+        ('Z','Keyless')
     )
 
     pitch = models.CharField(max_length=2, choices=PITCH)
@@ -68,7 +79,14 @@ class Tonality(models.Model):
     acctype = models.CharField(max_length=5, choices=ACCTYPE,blank=False,null=False )
 
     def __str__(self):
-        return "%s %s (%d %s)" % (self.pitch, self.mode, self.accidentals, self.acctype)
+        if self.pitch == 'X':
+            return 'Not determined'
+        elif self.pitch == 'Y':
+            return 'Ambiguous'
+        elif self.pitch == 'Z':
+            return 'Non-specific/Keyless'
+        else:
+            return "%s %s (%d %s)" % (self.pitch, self.mode, self.accidentals, self.acctype)
     
     class Meta:
         ordering = ('acctype','accidentals')

@@ -22,6 +22,8 @@ from library import views
 admin.site.site_header = "Oakleigh Brass Library Admin"
 admin.site.site_title = "Oakleigh Brass Library and Archive Admin"
 admin.site.index_title = "Welcome to Oakleigh Brass Library and Archive"
+# just to avoid disaster
+admin.site.disable_action('delete_selected')
 
 urlpatterns = [
     url(r'^$', views.top, name='home'),

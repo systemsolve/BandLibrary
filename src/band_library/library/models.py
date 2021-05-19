@@ -1,7 +1,8 @@
 
-
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.deletion import CASCADE, SET_NULL
+from django.contrib.auth.models import User
 from .utilx import error_log
 
 class LabelField(models.CharField):
@@ -86,7 +87,7 @@ class Tonality(models.Model):
         elif self.pitch == 'Z':
             return 'Non-specific/Keyless'
         else:
-            return "%s %s (%d %s)" % (self.pitch, self.mode, self.accidentals, self.acctype)
+            return "%s %s (%d%s)" % (self.pitch, self.mode, self.accidentals, ("" if self.acctype == 'none' else " %s" % self.acctype))
     
     class Meta:
         ordering = ('acctype','accidentals')
@@ -204,9 +205,11 @@ class SeeAlso(models.Model):
     url = models.URLField(blank=True, null=True)
 
     def clean(self):
-        error_log("SEE_ALSO CLEAN %s" % str(self))
+        error_log("SEE_ALSO MODEL CLEAN %s" % str(self))
         if not self.entry and not self.url:  # This will check for None or Empty
             raise ValidationError({'entry': 'At least one of field1 or field2 must have a value.'})
+        if self.entry and self.url:  # This will check for None or Empty
+            raise ValidationError({'entry': 'Set either entry or URL but not both.'})
 
     def __str__(self):
         response = ''
@@ -290,13 +293,25 @@ class Genre(models.Model):
     def __str__(self):
         return '%s' % (self.label)
 
+
 class Program(models.Model):
-    included = models.DateField()
+    performance_date = models.DateField()
+    title = models.CharField(max_length=200, verbose_name='Title/Theme', default='Title of Performance')
+    venue = models.CharField(max_length=200, default='Venue of Performance')
     comments = models.TextField(blank=True, null=True)
-    entry = models.ManyToManyField('Entry', related_name="programmed")
+
 
     def __str__(self):
-        return '%s' % (self.included)
+        return '%s: "%s" at %s' % (str(self.performance_date), str(self.title), str(self.venue))
+    
+        
+class ProgramItem(models.Model):
+    program = models.ForeignKey(Program, related_name='items', on_delete=CASCADE)
+    item = models.ForeignKey(Entry, related_name='performances', on_delete=CASCADE)
+    comments = models.TextField(blank=True, null=True)
+    
+    def __str__(self):
+        return '%s' % (self.item.title)
 
 class AssetType(models.Model):
     label = models.CharField(max_length=128)
@@ -341,5 +356,44 @@ class Asset(models.Model):
 
     def __str__(self):
         return '%s - %s: %s' % (self.asset_type, self.manufacturer, self.model)
+    
+class TaskStatus(models.Model):
+    description = models.CharField(max_length=64)
+    
+    def __str__(self):
+        return self.description
+    
+class Task(models.Model):
+    summary = models.CharField(max_length=256)
+    description = models.TextField(blank=True, null=True)
+    status = models.ForeignKey(TaskStatus, on_delete=CASCADE)
+    person = models.ForeignKey(User, related_name="tasks", verbose_name="Internal person", null=True, on_delete=SET_NULL)
+    extperson = models.CharField(max_length=256, verbose_name="External person", blank=True, null=True)
+    create_date = models.DateField(auto_now_add=True)
+    due_date = models.DateField(blank=True, null=True)
+    completion_date = models.DateField(blank=True, null=True)
+    
+    def clean(self):
+        if not (self.person or self.extperson):
+            raise ValidationError("Specify at least an internal or external person.")
+    
+    
+    def __str__(self):
+        return "%s [%s]" % (self.summary, str(self.create_date))
+    
+class TaskNote(models.Model):
+    task = models.ForeignKey(Task, related_name="notes", on_delete=CASCADE)
+    date = models.DateField(auto_now_add=True)
+    description = models.TextField()
+    
+class TaskItem(models.Model):
+    task = models.ForeignKey(Task, related_name="items", on_delete=CASCADE)
+    entry = models.ForeignKey(Entry, related_name="tasks", blank=True, null=True, on_delete=SET_NULL)
+    asset = models.ForeignKey(Asset, related_name="tasks", blank=True, null=True, on_delete=SET_NULL)
+    
+    def clean(self):
+        if not (self.entry or self.asset):
+            raise ValidationError("Specify at least an entry and/or asset")
+    
 
 

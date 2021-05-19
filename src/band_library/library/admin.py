@@ -16,7 +16,7 @@ from .models import Author
 from .models import Category
 from .models import Entry
 from .models import Instrument
-from .models import Program
+from .models import Program, ProgramItem
 from .models import Country
 from .models import Source
 from .models import Publisher
@@ -27,6 +27,7 @@ from .models import Completeness
 from .models import SeeAlso
 from .models import Tonality, Material
 from .models import Asset, AssetType, AssetCondition, AssetMaker, AssetModel
+from .models import Task, TaskStatus, TaskItem, TaskNote
 import sys
 from .utilx  import error_log
 
@@ -149,10 +150,22 @@ class EntryAdmin(admin.ModelAdmin, ExportCsvMixin):
 
     image_present.short_description = "Image"
     image_present.boolean = True
+    
+class ProgramItemAdmin(admin.TabularInline):
+    model = ProgramItem
+    extra = 1
+    fk_name = 'program'
+    autocomplete_fields = ['item']
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(
+                           attrs={'rows': 2,
+                                  'cols': 40,
+                                  })},
+    }
 
 class ProgramAdmin(admin.ModelAdmin):
     save_on_top = True
-    filter_horizontal = ['entry']
+    inlines = [ ProgramItemAdmin ]
     
 class AssetAdmin(admin.ModelAdmin, ExportCsvMixin):
     list_display = ('asset_type', 'allocated', 'manufacturer', 'model', 'identifier')
@@ -214,13 +227,42 @@ class AuthorAdmin(admin.ModelAdmin, ExportCsvMixin):
     arranger.admin_order_field = '_arranger'
     provider.admin_order_field = '_provider'
 
+class TaskItemAdmin(admin.TabularInline):
+    model = TaskItem
+    extra = 1
+    autocomplete_fields = ['entry','asset']
 
+
+class TaskNoteAdminList(admin.TabularInline):
+    model = TaskNote
+    extra = 0
+    can_delete = False
+    readonly_fields = ('description','date')
+    
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+class TaskNoteAdminAdd(admin.TabularInline):
+    model = TaskNote
+    can_delete = False
+    verbose_name = "New Notes"
+    verbose_name_plural = "New Notes"
+    extra = 1
+    
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.none()  # no existing records will appear
+
+
+class TaskAdmin(admin.ModelAdmin):
+    list_display = ('summary','person','extperson', 'status','create_date')
+    save_on_top = True
+    inlines = [ TaskItemAdmin, TaskNoteAdminList, TaskNoteAdminAdd  ]
 
 # Define a new User admin
 class UserAdmin(BaseUserAdmin):
     list_display = ('username', 'first_name', 'last_name', 'is_staff', 'last_login', 'is_superuser')
-
-
 
 
 class LogEntryAdmin(admin.ModelAdmin):
@@ -291,6 +333,8 @@ admin.site.register(AssetType)
 admin.site.register(AssetCondition)
 admin.site.register(AssetMaker)
 admin.site.register(AssetModel)
+admin.site.register(Task, TaskAdmin)
+admin.site.register(TaskStatus)
 #admin.site.register(SeeAlso, SeeAlsoAdmin)
 
 # Re-register UserAdmin

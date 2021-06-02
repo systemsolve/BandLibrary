@@ -5,6 +5,19 @@ from django.db.models.deletion import CASCADE, SET_NULL
 from django.contrib.auth.models import User
 from .utilx import error_log
 
+from django.contrib.auth.models import User
+
+def get_full_name(self):
+    if self.first_name:
+        if self.last_name:
+            return "%s %s" % (self.first_name, self.last_name)
+        else:
+            return self.first_name
+    else:
+        return self.username
+
+User.add_to_class("__str__", get_full_name)
+
 class LabelField(models.CharField):
 
     def from_db_value(self, value, expression, connection, context):
@@ -130,7 +143,7 @@ class Entry(models.Model):
     title = models.CharField(max_length=200)
     callno = LabelField(max_length=12, verbose_name="label", db_column="label")
     pagecount = models.IntegerField(blank=True, null=True, verbose_name="Page count", help_text="for solo cornet")
-    duration = models.CharField(max_length=8, default="0:0")
+    duration = models.CharField(max_length=8, default="0:0", help_text="approx duration - MM:SS - leave as 0:0 when not known")
     composer = models.ForeignKey('Author', blank=True, null=True, related_name="compositions", on_delete=CASCADE)
     arranger = models.ForeignKey('Author', blank=True, null=True, related_name="arrangements", on_delete=CASCADE)
     category = models.ForeignKey('Category', verbose_name='Shelving Category', on_delete=CASCADE)
@@ -307,11 +320,20 @@ class Program(models.Model):
         
 class ProgramItem(models.Model):
     program = models.ForeignKey(Program, related_name='items', on_delete=CASCADE)
-    item = models.ForeignKey(Entry, related_name='performances', on_delete=CASCADE)
+    item = models.ForeignKey(Entry, blank=True, null=True, verbose_name="Library item", related_name='performances', on_delete=CASCADE)
+    extitem = models.CharField(max_length=200, blank=True, null=True, verbose_name="External item", help_text="New or externally sourced item")
     comments = models.TextField(blank=True, null=True)
     
     def __str__(self):
-        return '%s' % (self.item.title)
+        if self.item:
+            return '%s' % (self.item.title)
+        else:
+            return self.extitem
+    
+    def clean(self):
+        if not (self.item or self.extitem):
+            raise ValidationError("Specify at least an library item or an external item")
+        
 
 class AssetType(models.Model):
     label = models.CharField(max_length=128)
@@ -367,7 +389,7 @@ class Task(models.Model):
     summary = models.CharField(max_length=256)
     description = models.TextField(blank=True, null=True)
     status = models.ForeignKey(TaskStatus, on_delete=CASCADE)
-    person = models.ForeignKey(User, related_name="tasks", verbose_name="Internal person", null=True, on_delete=SET_NULL)
+    person = models.ForeignKey(User, related_name="tasks", verbose_name="Internal person", blank=True, null=True, on_delete=SET_NULL)
     extperson = models.CharField(max_length=256, verbose_name="External person", blank=True, null=True)
     create_date = models.DateField(auto_now_add=True)
     due_date = models.DateField(blank=True, null=True)
@@ -394,6 +416,50 @@ class TaskItem(models.Model):
     def clean(self):
         if not (self.entry or self.asset):
             raise ValidationError("Specify at least an entry and/or asset")
+        
+class Folder(models.Model):
+    label = models.CharField(max_length=256)
+    slot_count = models.IntegerField(default=35)
+    issue_date = models.DateField()
     
+    def __str__(self):
+        return "%s (%d)" % (self.label, self.slot_count)
+    
+    @property
+    def alphabetic(self):
+        return self.slots.order_by('entry__label')
+    
+    @property
+    def numeric(self):
+        return self.slots.order_by('position')
+    
+    class Meta:
+        verbose_name = "Music Folder"
+        ordering = ['label']
+    
+    
+        
+    
+class FolderItem(models.Model):
+    folder = models.ForeignKey(Folder, related_name="slots", on_delete=CASCADE)
+    entry = models.ForeignKey(Entry, related_name="folders", blank=True, null=True, on_delete=SET_NULL)
+    comment = models.TextField(blank=True, null=True)
+    version = models.CharField(max_length=5, blank=True, null=True)
+    position = models.IntegerField()
 
-
+    def clean(self):
+        if not (self.entry or self.comment):
+            raise ValidationError("Specify at least an entry or a comment.")
+        
+    def item(self):
+        if self.entry:
+            return "%s" % str(self.entry.title)
+        else:
+            return "%s" % self.comment
+    
+    def __str__(self):
+        if self.entry:
+            return "E %s (%s) " % (str(self.entry), str(self.position))
+        else:
+            return "C %s (%s) " % (self.comment, str(self.position))
+    

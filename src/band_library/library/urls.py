@@ -8,4 +8,5 @@ urlpatterns = [
     url(r'^incipit/(?P<item>[0-9]+)/$', views.incipit, name='incipit'),
     url(r'^chip/(?P<item>[0-9]+)/$', views.chip, name='chip'),
     url(r'^pagefile/(?P<name>.+)/$', views.pagefile, name='pagefile'),
+    url(r'^folder/(?P<folderid>.+)/$', views.folderlist, name='folderlist'),
 ]

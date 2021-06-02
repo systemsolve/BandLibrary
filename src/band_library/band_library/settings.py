@@ -25,12 +25,13 @@ SECRET_KEY = 'qoah5oay3-z8nqdwvi5%o9szr1pyir$_5cdqbg4a@mgj$k99ix'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['10.222.0.28', '127.0.0.1', 'localhost', '*']
+ALLOWED_HOSTS = ['library.oakleighband.org.au',]
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'django.contrib.admindocs',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -78,11 +79,11 @@ WSGI_APPLICATION = 'band_library.wsgi.application'
 # https://docs.djangoproject.com/en/1.9/ref/settings/#databases
 
 DATABASES = {
+#    'devel': {
+#        'ENGINE': 'django.db.backends.sqlite3',
+#        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+#    },
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    },
-    'production': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'oblibrary',
         'USER': 'oblibrary',
@@ -135,7 +136,9 @@ STATICFILES_DIRS = [
 ]
 
 STATIC_URL = '/static/'
-BL_BASEDIR = '/Users/david/src/BandLibrary'
+
+# app settings
+BL_BASEDIR = '/data/django/www'
 BL_MEDIADIR = os.path.join(BL_BASEDIR, 'media')
 BL_CACHEDIR = os.path.join(BL_BASEDIR, 'mediacache')
 MEDIA_ROOT = BL_MEDIADIR

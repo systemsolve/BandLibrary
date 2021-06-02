@@ -13,6 +13,7 @@ from django_tables2.utils import A
 from .models import Category
 from .models import Entry
 from .models import Genre
+from .models import Folder
 import os
 import subprocess
 import sys
@@ -69,6 +70,7 @@ def index(request):
     entries = Entry.objects
     limited = False
     limitcat = None
+    incomplete = False
     error_log("INDEX USER %s %s" % (str(request.user), str(request.user.user_permissions)))
     if not request.user.is_staff and request.user.has_perm('library.march_only'):
         limited = True
@@ -209,3 +211,7 @@ def top(request):
 def logout_view(request):
     logout(request)
     return redirect('/')
+
+def folderlist(request, folderid):
+    folder = Folder.objects.filter(pk__exact=folderid).first()
+    return render(request, 'library/folderlist.twig', {'folder': folder})

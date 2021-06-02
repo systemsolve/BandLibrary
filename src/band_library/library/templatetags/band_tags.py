@@ -20,3 +20,8 @@ def makethumb(value):
         fff = open(os.path.join(mediadir, value), "rb")
     iii = Incipit(source=fff)    
     return iii.generate()
+
+@register.filter(name='totitle')
+def maketitle(value):
+    result = ' '.join(elem.capitalize() for elem in value.split())
+    return result

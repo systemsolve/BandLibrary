@@ -29,6 +29,7 @@ urlpatterns = [
     url(r'^$', views.top, name='home'),
     url(r'^logout$', views.logout_view, name='logout'),
     url(r'^library/', include('library.urls')),
+    url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
     url(r'^admin/', admin.site.urls),
     url(r'^robots.txt$', lambda r: HttpResponse("User-agent: *\nDisallow: /", content_type="text/plain")) 
 ]

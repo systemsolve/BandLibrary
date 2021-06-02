@@ -11,6 +11,7 @@ from django.contrib.auth.models import User
 from django.contrib.admin.models import LogEntry, DELETION
 from django.utils.html import escape
 from django.urls import reverse
+from django import forms
 
 from .models import Author
 from .models import Category
@@ -28,6 +29,8 @@ from .models import SeeAlso
 from .models import Tonality, Material
 from .models import Asset, AssetType, AssetCondition, AssetMaker, AssetModel
 from .models import Task, TaskStatus, TaskItem, TaskNote
+from .models import Folder, FolderItem
+
 import sys
 from .utilx  import error_log
 
@@ -98,7 +101,7 @@ class EntryAdmin(admin.ModelAdmin, ExportCsvMixin):
     search_fields = ['title', 'composer__given', 'composer__surname', 'arranger__surname','callno','comments', 'composer__realname__surname', 'arranger__realname__surname']
     readonly_fields = ('image_link', 'image_present')
     save_on_top = True
-    fields = ('title', ('category', 'callno'), ('genre','key'),'composer', 'arranger', ('publisher', 'pubyear', 'estdecade', 'platecode'), ('pubname', 'pubissue'), ('source','provider'), 'instrument', ('comments','backpage'), 'media',('material','condition','pagecount','incomplete', 'completeness', 'duplicate'), 'image_link', 'digitised')
+    fields = ('title', ('category', 'callno'), ('genre','key','duration'),'composer', 'arranger', ('publisher', 'pubyear', 'estdecade', 'platecode'), ('pubname', 'pubissue'), ('source','provider'), 'instrument', ('comments','backpage'), 'media',('material','condition','pagecount','incomplete', 'completeness', 'duplicate'), 'image_link', 'digitised')
     autocomplete_fields = ['composer','arranger','provider']
     actions = ["export_as_csv"]
     inlines = [ SeeAlsoAdmin ]
@@ -156,12 +159,19 @@ class ProgramItemAdmin(admin.TabularInline):
     extra = 1
     fk_name = 'program'
     autocomplete_fields = ['item']
+    readonly_fields = ['item_duration']
     formfield_overrides = {
         models.TextField: {'widget': Textarea(
                            attrs={'rows': 2,
                                   'cols': 40,
                                   })},
     }
+    
+    def item_duration(self, instance):
+        if instance.item:
+            return instance.item.duration
+        else:
+            return "n/a"
 
 class ProgramAdmin(admin.ModelAdmin):
     save_on_top = True
@@ -259,6 +269,68 @@ class TaskAdmin(admin.ModelAdmin):
     list_display = ('summary','person','extperson', 'status','create_date')
     save_on_top = True
     inlines = [ TaskItemAdmin, TaskNoteAdminList, TaskNoteAdminAdd  ]
+    
+
+class FolderFormSet(forms.BaseInlineFormSet):
+    def clean(self):
+        cleaned_data = super().clean()
+        scount = {}
+        errors = []
+        for form in self.forms:
+            if not form.cleaned_data:
+                continue
+            error_log("FOLDER CLEAN SLOTS %s -> %s" % (str(form.instance), str(form.cleaned_data)))
+            if form.cleaned_data['position'] in scount:
+                errors.append("Duplicate position %s" % str(form.cleaned_data['position']))
+            else:
+                scount[form.cleaned_data['position']] = 1
+                
+        if errors:
+            raise forms.ValidationError(",".join(errors))
+        
+        return cleaned_data
+        """
+        slots = self.slots.all()
+        scount = {}
+        errors = []
+        error_log("FOLDER CLEAN SLOTS %s" % str(slots))
+        for slot in slots:
+            error_log("FOLDER CLEAN %s" % str(slot))
+            if slot.position in scount:
+                errors.append("Duplicate position %s" % str(slot.position))
+            else:
+                scount[slot.position] = 1
+        
+        if errors:
+            raise ValidationError(",".join(errors))
+            """
+
+    
+class FolderItemAdmin(admin.TabularInline):
+    model = FolderItem
+    fields = ('position','entry','comment','version')
+    extra = 1
+    formset = FolderFormSet
+    autocomplete_fields = ['entry']
+    ordering = ['position']
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(
+                           attrs={'rows': 2,
+                                  'cols': 40,
+                                  'style': 'height: 2em;'})},
+    }
+    
+    def get_max_num(self, request, obj):
+        if obj:
+            error_log("FOLDER GET MAX NUM %s -> %s -> %d" % (str(self), str(obj), obj.slot_count))
+            return obj.slot_count
+        else:
+            return 35
+    
+class FolderAdmin(admin.ModelAdmin):
+    list_display = ('label','slot_count')
+    save_on_top = True
+    inlines = [ FolderItemAdmin  ]
 
 # Define a new User admin
 class UserAdmin(BaseUserAdmin):
@@ -336,6 +408,7 @@ admin.site.register(AssetModel)
 admin.site.register(Task, TaskAdmin)
 admin.site.register(TaskStatus)
 #admin.site.register(SeeAlso, SeeAlsoAdmin)
+admin.site.register(Folder, FolderAdmin)
 
 # Re-register UserAdmin
 admin.site.unregister(User)

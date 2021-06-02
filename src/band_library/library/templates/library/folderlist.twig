@@ -1,0 +1,38 @@
+{% extends "library/base.twig" %}
+{% load band_tags %}
+{% load static %}
+{% block styles %}
+    <style type="text/css">
+        table.folder {
+            width: 40%;
+        }
+        .folder td {
+            border: 1px solid black;
+        }
+    </style>
+{% endblock %}
+{% block title %}
+    <title>Folder: {{folder.label}}</title>
+{% endblock %}
+{% block main %}
+    <h2><img src="{% static 'apple-touch-icon.png' %}">{{ folder.label }}: {{ folder.issue_date}} Numeric List</h2>
+    <table class="folder">
+        {% for slot in folder.numeric %}
+            <tr>
+                <td>{{ slot.position }}</td>
+                <td>{{ slot.item|totitle }}</td>
+                <td>{{ slot.version }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+        <h2 style="page-break-before: always"><img src="{% static 'apple-touch-icon.png' %}">{{ folder.label }}: {{ folder.issue_date}} Alphabetical List</h2>
+    <table class="folder">
+        {% for slot in folder.alphabetic %}
+            <tr>
+                <td>{{ slot.position }}</td>
+                <td>{{ slot.item|totitle }}</td>
+                <td>{{ slot.version }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endblock %}

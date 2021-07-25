@@ -1,4 +1,4 @@
-
+from tinymce import models as tinymce_models
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.deletion import CASCADE, SET_NULL
@@ -412,6 +412,7 @@ class TaskItem(models.Model):
     task = models.ForeignKey(Task, related_name="items", on_delete=CASCADE)
     entry = models.ForeignKey(Entry, related_name="tasks", blank=True, null=True, on_delete=SET_NULL)
     asset = models.ForeignKey(Asset, related_name="tasks", blank=True, null=True, on_delete=SET_NULL)
+    note = models.TextField(blank=True, null=True)
     
     def clean(self):
         if not (self.entry or self.asset):
@@ -421,6 +422,7 @@ class Folder(models.Model):
     label = models.CharField(max_length=256)
     slot_count = models.IntegerField(default=35)
     issue_date = models.DateField()
+    sidebar = tinymce_models.HTMLField(blank=True, null=True, help_text="Text to annotate the index.")
     
     def __str__(self):
         return "%s (%d)" % (self.label, self.slot_count)
@@ -431,7 +433,19 @@ class Folder(models.Model):
     
     @property
     def numeric(self):
-        return self.slots.order_by('position')
+        allslots = {}
+        
+        for ss in range(0, self.slot_count):
+            # prefill available slots
+            error_log("PREFILL '%s'" % str(ss+1))
+            allslots[str(ss+1)] = None
+            
+        for sss in self.slots.order_by('position'):
+            error_log("REFILL '%s'" % str(sss.position))
+            allslots[str(sss.position)] = sss
+            
+        error_log("SLOTS '%s'" % str(allslots))
+        return allslots
     
     class Meta:
         verbose_name = "Music Folder"

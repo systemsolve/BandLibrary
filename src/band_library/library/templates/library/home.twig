@@ -36,6 +36,18 @@
         </form>
         {% endif %}
         <h2><a href='/library/'>Full Listing</a></h2>
+        {% for folder in folders %}
+            {% if forloop.first %}
+            <h2>Music Folder Lists</h2>
+            <ul>
+            {% endif %}
+            <li><a href="{% url 'folderlist' folder.id %}">{{ folder.label }}</a> - as at {{ folder.issue_date }}
+            {% if forloop.last %}
+            </ul>
+            {% endif %}
+        {% empty %}
+            <h2>No music folder lists yet</h2>
+        {% endfor %}
         {% if user.is_staff %}
         <p><a href='/admin/'>Admin: authorised users only</a></p>
         {% endif %}

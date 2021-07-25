@@ -205,8 +205,14 @@ def top(request):
         categories = Category.objects.all()
 
     genres = Genre.objects.all()
+    folders = Folder.objects.all()
 
-    return render(request, 'library/home.twig', {'categories': categories, 'genres': genres, 'limited': limited})
+    return render(request, 'library/home.twig', {
+        'categories': categories,
+        'genres': genres,
+        'folders': folders,
+        'limited': limited
+        })
 
 def logout_view(request):
     logout(request)

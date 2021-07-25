@@ -11,6 +11,3 @@ alter table library_author add column country_id integer null references library
 alter table library_author add column comments text null;
 
 commit;
-
-
-

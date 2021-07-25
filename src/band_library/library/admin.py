@@ -241,6 +241,12 @@ class TaskItemAdmin(admin.TabularInline):
     model = TaskItem
     extra = 1
     autocomplete_fields = ['entry','asset']
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(
+                           attrs={'rows': 1,
+                                  'cols': 70,
+                                  'style': 'height: 1.25em;'})},
+    }
 
 
 class TaskNoteAdminList(admin.TabularInline):
@@ -259,6 +265,7 @@ class TaskNoteAdminAdd(admin.TabularInline):
     verbose_name = "New Notes"
     verbose_name_plural = "New Notes"
     extra = 1
+    
     
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
@@ -308,7 +315,8 @@ class FolderFormSet(forms.BaseInlineFormSet):
     
 class FolderItemAdmin(admin.TabularInline):
     model = FolderItem
-    fields = ('position','entry','comment','version')
+    fields = ('position','entry','genre', 'location', 'comment','version')
+    readonly_fields = ('genre', 'location')
     extra = 1
     formset = FolderFormSet
     autocomplete_fields = ['entry']
@@ -319,6 +327,19 @@ class FolderItemAdmin(admin.TabularInline):
                                   'cols': 40,
                                   'style': 'height: 2em;'})},
     }
+    
+    def genre(self, instance):
+        if instance.entry:
+            return instance.entry.genre
+        else:
+            return ""
+        
+    def location(self, instance):
+        if instance.entry:
+            return "%s%s" % (str(instance.entry.category.code), str(instance.entry.callno))
+        else:
+            return ""
+        
     
     def get_max_num(self, request, obj):
         if obj:

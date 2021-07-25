@@ -39,13 +39,13 @@ def logit(msg, myfile=sys.stderr):
     myfile.write("%s\n" % msg)
     myfile.flush()
 
-parser = argparse.ArgumentParser(description="Compare ADB company balance date to BR balance date")
+parser = argparse.ArgumentParser(description="Publish Music to Folders")
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument('--csv', help="Process CSV file (8 cols - ignore, srcdir, srcitem, dstdir, dstitem, version, audio-src, audio-item)", nargs=1)
 group.add_argument('--item', help="Process single item: srcdir srcitem dstdir dstitem version", nargs=5)
 parser.add_argument('--audio', help="Process audio for single item (ignored for CSV): srcdir srcitem", nargs=2)
 parser.add_argument('--defv', help="Version number for sources without one", nargs=1, default='0.1')
-
+group.add_argument('--setup', help='set up folder structure in SETUP', nargs=1)
 parser.add_argument('--list', help='list pieces', action='store_true')
 parser.add_argument('--test', help='dry run', action='store_true')
 parser.add_argument('--dbg', help='debug', action='store_true')
@@ -59,7 +59,17 @@ def report(msg, myfile=sys.stderr):
 
 items = []
 
-if args.csv:
+if args.setup:
+    
+    for pinfo in PARTS + [SOUNDS]:
+        if args.test:
+            report("WOULD CREATE DIR: %s/%s" % (args.setup[0], pinfo['target']))
+        else:
+            if args.verbose:
+                report("CREATE DIR: %s/%s" % (args.setup[0], pinfo['target']))
+            os.makedirs("%s/%s" % (args.setup[0], pinfo['target']), mode=0o755, exist_ok=True)
+    sys.exit(0)
+elif args.csv:
     if args.dbg:
         report("CSV %s" % str(args.csv))
     filename = args.csv[0]
@@ -124,9 +134,13 @@ for item in items:
         if item['version']:
             if item['version'] == "$":
                 suffix = ".pdf"
+                dsuffix = suffix
+            elif item['version'] == 'SCAN':
+                suffix = ".pdf"
+                dsuffix = "-scan.pdf"
             else:
                 suffix = "-%s.pdf" % item['version']
-            dsuffix = suffix
+                dsuffix = suffix
         else:
             suffix = ".pdf"
             dsuffix = "-%s.pdf" % args.defv[0]
@@ -166,6 +180,8 @@ for item in items:
         atype = os.path.splitext(audiofile)[1]
         if item['version']:
             if item['version'] == "$":
+                asuffix = atype
+            elif item['version'] == 'SCAN':
                 asuffix = atype
             else:
                 asuffix = "-%s%s" % (item['version'], atype)

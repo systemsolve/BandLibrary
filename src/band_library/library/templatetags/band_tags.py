@@ -1,4 +1,4 @@
-import os
+import os, re
 from imagekit import ImageSpec, register
 from imagekit.processors import ResizeToFill
 from django import template
@@ -23,5 +23,12 @@ def makethumb(value):
 
 @register.filter(name='totitle')
 def maketitle(value):
-    result = ' '.join(elem.capitalize() for elem in value.split())
+    tricky1re = re.compile(r'(.*), (a|the)(.*)', flags=re.I) # separate article
+    tricky2re = re.compile(r'(.*) - .*', flags=re.I) # comment in title
+    
+    value1 = tricky1re.sub(r"\2 \1\3", value)
+    value2 = tricky2re.sub(r"\1", value1)
+        
+    
+    result = ' '.join(elem.capitalize() for elem in value2.split())
     return result

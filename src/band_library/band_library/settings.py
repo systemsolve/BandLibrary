@@ -25,7 +25,7 @@ SECRET_KEY = 'qoah5oay3-z8nqdwvi5%o9szr1pyir$_5cdqbg4a@mgj$k99ix'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['library.oakleighband.org.au',]
+ALLOWED_HOSTS = ['library.oakleighband.org.au','azlibrary.oakleighband.org.au']
 
 
 # Application definition
@@ -125,6 +125,19 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
+
+TINYMCE_DEFAULT_CONFIG = {
+    "theme": "silver",
+    "height": 500,
+    "menubar": False,
+    "plugins": "advlist,autolink,lists,link,image,charmap,print,preview,anchor,"
+    "searchreplace,visualblocks,code,fullscreen,insertdatetime,media,table,paste,"
+    "code,help,wordcount",
+    "toolbar": "undo redo | formatselect | "
+    "bold italic backcolor | alignleft aligncenter "
+    "alignright alignjustify | bullist numlist outdent indent | table code |"
+    "removeformat | help",
+}
 
 
 # Static files (CSS, JavaScript, Images)

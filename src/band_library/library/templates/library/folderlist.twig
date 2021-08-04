@@ -14,14 +14,21 @@
             width: 45%;
             vertical-align: top;
         }
+        div.column.right {
+            margin-left: 16px;
+            margin-top: 18pt; /* track TH font size */
+        }
+        table.folder td, table.folder th {
+            font-size: 16pt;
+        }
     </style>
 {% endblock %}
 {% block title %}
     <title>Folder: {{folder.label}}</title>
 {% endblock %}
 {% block main %}
-    <h2><img src="{% static 'apple-touch-icon.png' %}">{{ folder.label }}: {{ folder.issue_date}} Numeric List</h2>
-    <div class="column">
+    <h1><img src="{% static 'apple-touch-icon.png' %}">{{ folder.label }}: {{ folder.issue_date}} Numeric List</h1>
+    <div class="column left">
     <table class="folder">
         <tr>
             <th>Page</th><th>Title</th><th>Version</th>
@@ -44,11 +51,11 @@
         {% endfor %}
     </table>
     </div>
-    <div class="column">
+    <div class="column right">
         {{ folder.sidebar|safe }}
     </div>
-        <h2 style="page-break-before: always"><img src="{% static 'apple-touch-icon.png' %}">{{ folder.label }}: {{ folder.issue_date}} Alphabetical List</h2>
-        <div class="column">
+    <h1 style="page-break-before: always"><img src="{% static 'apple-touch-icon.png' %}">{{ folder.label }}: {{ folder.issue_date}} Alphabetical List</h1>
+    <div class="column left">
     <table class="folder">
         <tr>
             <th>Title</th><th>Page</th><th>Version</th>
@@ -62,7 +69,7 @@
         {% endfor %}
     </table>
         </div>
-    <div class="column">
+    <div class="column right">
         {{ folder.sidebar|safe }}
     </div>
 {% endblock %}

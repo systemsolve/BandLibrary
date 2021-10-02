@@ -77,11 +77,11 @@ def index(request):
         limitcat = 'M'
 
     if limited:
-        fff = Q(category__code__exact=limitcat)&Q(incomplete=False)
+        fff = Q(category__code__exact=limitcat)&Q(completeness__usable=True)
     else:
         if not 'incomplete' in request.GET:
             incomplete = False
-            fff = fff & Q(incomplete=False)
+            fff = fff & Q(completeness__usable=True)
         else:
             incomplete = True
         if 'words' in request.GET:
@@ -139,9 +139,13 @@ def incipit(request, item):
 @login_required
 def chip(request, item):
     entry = Entry.objects.filter(pk__exact=item).first()
-    fname = entry.media.name
-    res = '-r 16'
-    return makeimage(fname, res, "chip-")
+    mfile = entry.media
+    if mfile:
+        fname = mfile.name
+        res = '-r 16'
+        return makeimage(fname, res, "chip-")
+    else:
+        return None
 
 @permission_required('library.change_entry', login_url='/')
 def pagefile(request, name):

@@ -1,7 +1,7 @@
 from tinymce import models as tinymce_models
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models.deletion import CASCADE, SET_NULL
+from django.db.models.deletion import CASCADE, SET_NULL, PROTECT
 from django.contrib.auth.models import User
 from .utilx import error_log
 
@@ -136,37 +136,44 @@ class Tonality(models.Model):
             return self
 
 
-
-
+class Ensemble(models.Model):
+    name = models.CharField(max_length=32)
+    
+    def __str__(self):
+        return self.name
 
 class Entry(models.Model):
     title = models.CharField(max_length=200)
     callno = LabelField(max_length=12, verbose_name="label", db_column="label")
-    pagecount = models.IntegerField(blank=True, null=True, verbose_name="Page count", help_text="for solo cornet")
+    oldpagecount = models.IntegerField(blank=True, null=True, verbose_name="Page count", help_text="for solo cornet")
     duration = models.CharField(max_length=8, default="0:0", help_text="approx duration - MM:SS - leave as 0:0 when not known")
     composer = models.ForeignKey('Author', blank=True, null=True, related_name="compositions", on_delete=CASCADE)
     arranger = models.ForeignKey('Author', blank=True, null=True, related_name="arrangements", on_delete=CASCADE)
     category = models.ForeignKey('Category', verbose_name='Shelving Category', on_delete=CASCADE)
     genre = models.ForeignKey('Genre', verbose_name='Type/Genre of Work', blank=True, null=True, on_delete=SET_NULL)
     key = models.ForeignKey('Tonality', verbose_name='Solo Cornet Key of Work', blank=True, null=True, on_delete=CASCADE)
+    ensemble = models.ForeignKey('Ensemble', on_delete=PROTECT)
     publisher = models.ForeignKey('Publisher', blank=True, null=True, related_name="pubyears", on_delete=CASCADE)
     pubyear = models.IntegerField(verbose_name='Year of edition', blank=True, null=True)
     estdecade = models.IntegerField(verbose_name='Est. Decade', help_text="If exact year not known", blank=True, null=True)
     pubname = models.ForeignKey('Publication', verbose_name='Publication', blank=True, null=True, related_name="publications", on_delete=CASCADE)
     pubissue = models.CharField(max_length=24,verbose_name='Vol/Issue', blank=True, null=True)
+    saleable = models.BooleanField(default=False, verbose_name='Ready for sale')
+    fee = models.DecimalField(blank=True, null=True, max_digits=6, decimal_places=2, verbose_name='Fee (AUD)')
     platecode = models.CharField(max_length=12, blank=True, null=True)
-    comments = models.TextField(blank=True, null=True)
+    comments = models.TextField(blank=True, null=True, verbose_name='Private comments')
     backpage = models.TextField(verbose_name='Back page comments (e.g. ads)', blank=True, null=True)
+    perfnotes = models.TextField(verbose_name='Performance notes', blank=True, null=True)
     added = models.DateField(verbose_name='Date added', auto_now=True)
     instrument = models.ForeignKey("Instrument", blank=True, null=True, on_delete=CASCADE)
     #media = models.CharField(max_length=256, blank=True, null=True)
-    media = models.FileField(upload_to='', max_length=256, blank=True, null=True)
+    oldmedia = models.FileField(upload_to='', max_length=256, blank=True, null=True)
     source = models.ForeignKey("Source", blank=True, null=True, related_name="+", on_delete=SET_NULL)
     provider = models.ForeignKey('Author', blank=True, null=True, related_name="donations", on_delete=CASCADE)
-    digitised = models.BooleanField(default=False)
+#    digitised = models.BooleanField(default=False)
     material = models.ForeignKey('Material', blank=True, null=True, related_name="+", on_delete=CASCADE)
     condition = models.ForeignKey('Condition', blank=True, null=True, related_name="+", on_delete=CASCADE)
-    incomplete = models.BooleanField(default=False)
+#    incomplete = models.BooleanField(default=False)
     # allow nulls initially
     completeness = models.ForeignKey('Completeness', blank=True, null=True, related_name="+", on_delete=SET_NULL)
     duplicate = models.BooleanField(default=False, verbose_name='Already in library?')
@@ -181,6 +188,81 @@ class Entry(models.Model):
 
     def __str__(self):
         return '%s (%s,%s)' % (self.title, self.category.code, self.callno)
+    
+    # main check: if 'saleable' then certain fields must be set
+    
+#    def clean(self):
+#        salefields = ('title', 'composer','publisher','media','genre','duration')
+#        return
+    
+    @property
+    def media(self):
+        item = self.related_media.filter(asthumb=True).first()
+        if item:
+            return item.mfile
+        else:
+            return None
+        
+    @property
+    def pagecount(self):
+        item = self.related_media.filter(asthumb=True).first()
+        if item:
+            return item.pagecount
+        else:
+            return None
+    
+    @property
+    def incomplete(self):        
+        return not (self.completeness and self.completeness.usable)
+    
+class LibraryPersona(models.Model):
+    label = models.CharField(max_length=128, unique=True)
+    #TODO: add ACL-type attributes
+    
+    def __str__(self):
+        return self.label
+    
+class EntryPurpose(models.Model):
+    label = models.CharField(max_length=128, unique=True)
+    
+    def __str__(self):
+        return self.label
+    
+
+    
+class EntryMedia(models.Model):
+    MTPDF = "PDF"
+    MTIMAGE = "IMAGE"
+    MTVIDEO = "VIDEO"
+    MTAUDIO = "AUDIO"
+    MTOTHER = "OTHER"
+    MEDIATYPES = (
+        (MTPDF, "PDF"),
+        (MTIMAGE, "Image"),
+        (MTVIDEO, "Video"),
+        (MTAUDIO, "Audio"),
+        (MTOTHER, "Other/Unknown")
+    )
+    
+    entry = models.ForeignKey(Entry, related_name='related_media', on_delete=CASCADE)
+    mfile = models.FileField(upload_to='', max_length=256, verbose_name='Filename')
+    mtype = models.CharField(max_length=8, choices=MEDIATYPES, default="OTHER", verbose_name="Media Type")
+    purpose = models.ForeignKey(EntryPurpose, on_delete=PROTECT)
+    visibility = models.ForeignKey(LibraryPersona, on_delete=PROTECT, verbose_name="Visible to")
+    pagecount = models.IntegerField(blank=True, null=True, verbose_name="Page count")
+    asthumb = models.BooleanField(default=False, verbose_name='Use for Advert')
+    comment = models.CharField(max_length=128, blank=True, null=True)
+    
+#    def clean(self):
+#        nthumbs = self.entry.related_media.filter(asthumb=True).count()
+#        if False and nthumbs > 1:
+#            raise ValidationError('Only one media item can be for an - %d found' % (nthumbs,))
+#        return
+    
+    class Meta:
+        verbose_name = "Related file"
+        verbose_name_plural = "Related files"
+    
 
 class Publication(models.Model):
     name = models.CharField(max_length=128)
@@ -215,25 +297,36 @@ class Publisher(models.Model):
 class SeeAlso(models.Model):
     source_entry = models.ForeignKey(Entry, related_name='related_entries', on_delete=CASCADE)
     entry = models.ForeignKey(Entry, related_name='cited_by', blank=True, null=True, on_delete=CASCADE)
-    url = models.URLField(blank=True, null=True)
+    purpose = models.ForeignKey(EntryPurpose, blank=True, null=True, on_delete=PROTECT)
+#    url = models.URLField(blank=True, null=True)
+    comment = models.CharField(max_length=256, blank=True, null=True)
 
-    def clean(self):
-        error_log("SEE_ALSO MODEL CLEAN %s" % str(self))
-        if not self.entry and not self.url:  # This will check for None or Empty
-            raise ValidationError({'entry': 'At least one of field1 or field2 must have a value.'})
-        if self.entry and self.url:  # This will check for None or Empty
-            raise ValidationError({'entry': 'Set either entry or URL but not both.'})
+#    def clean(self):
+#        error_log("SEE_ALSO MODEL CLEAN %s" % str(self))
+#        if not self.entry and not self.url:  # This will check for None or Empty
+#            raise ValidationError({'entry': 'At least one of field1 or field2 must have a value.'})
+#        if self.entry and self.url:  # This will check for None or Empty
+#            raise ValidationError({'entry': 'Set either entry or URL but not both.'})
 
     def __str__(self):
-        response = ''
-        joiner = ''
-        if self.entry:
-            response += ('%s%s -> E %s' % (joiner, self.source_entry.callno, str(self.entry)))
-            joiner = ', '
-        if self.url:
-            response += '%s%s -> U %s' % (joiner, self.source_entry.callno, str(self.url))
+        return str(self.entry)
+    
+    class Meta:
+        verbose_name = "Related Library Entry"
+        verbose_name_plural = "Related Library Entries"
+        
+class WebLink(models.Model):
+    entry = models.ForeignKey(Entry, related_name='weblinks', on_delete=CASCADE)
+    url = models.URLField()
+    purpose = models.ForeignKey(EntryPurpose, blank=True, null=True, on_delete=PROTECT)
+    comment = models.CharField(max_length=256, blank=True, null=True)
 
-        return response
+    def __str__(self):
+        return str(self.url)
+    
+    class Meta:
+        verbose_name = "Web Link"
+
 
 
 class Author(models.Model):

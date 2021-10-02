@@ -25,8 +25,8 @@ from .models import Genre
 from .models import Publication
 from .models import Condition
 from .models import Completeness
-from .models import SeeAlso
-from .models import Tonality, Material
+from .models import SeeAlso, EntryMedia, EntryPurpose, LibraryPersona, WebLink
+from .models import Tonality, Material, Ensemble
 from .models import Asset, AssetType, AssetCondition, AssetMaker, AssetModel
 from .models import Task, TaskStatus, TaskItem, TaskNote
 from .models import Folder, FolderItem
@@ -73,7 +73,31 @@ class SeeAlsoAdmin(admin.TabularInline):
     extra = 1
     fk_name = 'source_entry'
     autocomplete_fields = ['entry']
+    
+class WebLinkAdmin(admin.TabularInline):
+    model = WebLink
+    extra = 1
+    fk_name = 'entry'
+    
 
+class MediaInlineFormSet(forms.BaseInlineFormSet):
+   def clean(self):
+      super().clean()
+      thumbcount = 0      
+      for form in self.forms:
+         if not form.is_valid():
+            return #other errors exist, so don't bother
+         if form.cleaned_data and not form.cleaned_data.get('DELETE') and form.cleaned_data['asthumb']:
+            thumbcount += 1
+      if thumbcount > 1:
+          raise forms.ValidationError("Only one advert allowed")
+          
+    
+class MediaAdmin(admin.TabularInline):
+    model = EntryMedia
+    formset = MediaInlineFormSet
+    extra = 1
+    
 
 class EmptyMediaFilter(admin.SimpleListFilter):
     title = "Media State"
@@ -101,10 +125,10 @@ class EntryAdmin(admin.ModelAdmin, ExportCsvMixin):
     search_fields = ['title', 'composer__given', 'composer__surname', 'arranger__surname','callno','comments', 'composer__realname__surname', 'arranger__realname__surname']
     readonly_fields = ('image_link', 'image_present')
     save_on_top = True
-    fields = ('title', ('category', 'callno'), ('genre','key','duration'),'composer', 'arranger', ('publisher', 'pubyear', 'estdecade', 'platecode'), ('pubname', 'pubissue'), ('source','provider'), 'instrument', ('comments','backpage'), 'media',('material','condition','pagecount','incomplete', 'completeness', 'duplicate'), 'image_link', 'digitised')
+    fields = (('title','saleable','fee'), ('category', 'callno'), ('genre','ensemble', 'key','duration'),'composer', 'arranger', ('publisher', 'pubyear', 'estdecade', 'platecode'), ('pubname', 'pubissue'), ('source','provider'), 'instrument', ('comments','backpage','perfnotes'), ('material','condition','completeness', 'duplicate'), 'image_link')
     autocomplete_fields = ['composer','arranger','provider']
     actions = ["export_as_csv"]
-    inlines = [ SeeAlsoAdmin ]
+    inlines = [ MediaAdmin, SeeAlsoAdmin, WebLinkAdmin ]
 
     formfield_overrides = {
         models.TextField: {'widget': Textarea(
@@ -136,7 +160,7 @@ class EntryAdmin(admin.ModelAdmin, ExportCsvMixin):
             return 'MISSING'
 
 
-    image_link.short_description = "Image Link"
+    image_link.short_description = "Advert"
 
 #    def is_complete(self, instance):
 #
@@ -418,6 +442,7 @@ admin.site.register(Publisher)
 admin.site.register(Publication)
 admin.site.register(Condition)
 admin.site.register(Genre)
+admin.site.register(Ensemble)
 admin.site.register(Completeness)
 admin.site.register(Tonality)
 admin.site.register(Material)
@@ -428,6 +453,8 @@ admin.site.register(AssetMaker)
 admin.site.register(AssetModel)
 admin.site.register(Task, TaskAdmin)
 admin.site.register(TaskStatus)
+admin.site.register(LibraryPersona)
+admin.site.register(EntryPurpose)
 #admin.site.register(SeeAlso, SeeAlsoAdmin)
 admin.site.register(Folder, FolderAdmin)
 

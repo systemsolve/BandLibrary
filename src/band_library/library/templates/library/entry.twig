@@ -7,8 +7,8 @@
     {% if not limited %}
     <div class="searcher" style="margin-top: 20px;">
     <form class="form-inline" action='/library/'>
-        Keywords: <input class="form-control" type="text" name="words" value="{{thewords}}"> 
-        Category: 
+        Keywords: <input class="form-control" type="text" name="words" value="{{thewords}}">
+        Category:
         <select class="form-control" name="category">
             <option value="">All</option>
             {% for opt in categories %}
@@ -37,7 +37,7 @@
                 <tr>
                     <td>Genre/Type:</td>
                     <td>{{ entry.genre }}</td>
-                    
+
                 </tr>
                 {% if can_edit %}
                 <tr>
@@ -76,18 +76,23 @@
                     </tr>
                 {% endif %}
                 {% for also in entry.related_entries.all %}
+                    {% if also %}
                     <tr>
-                        {% if also.entry %}
                         <td>Related entry:</td>
                         <td><a href="../{{also.entry.id}}">{{ also.entry.title }}</a></td>
-                        {% else %}
-                        <td>Web page:</td>
-                        <td><a href="{{ also.url }}" target="_blank">{{ also.url }}</a></td>
-                        {% endif %}
                     </tr>
+                    {% endif %}
+                {% endfor %}
+                {% for also in entry.weblinks.all %}
+                    {% if also %}
+                    <tr>
+                        <td>Web page:</td>
+                        <td><a href="{{ also }}" target="_blank">{{ also }}</a></td>
+                    </tr>
+                    {% endif %}
                 {% endfor %}
                 {% if entry.media %}
-                    <tr>                        
+                    <tr>
                         <td colspan="4">
                             <img width=400 src='../../incipit/{{ entry.id }}'>
                         </td>

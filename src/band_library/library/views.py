@@ -4,7 +4,7 @@ from django.db.models import Q, IntegerField
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth import authenticate, login, logout
 from django.db.models.functions import Cast
-from django.http import HttpResponse, FileResponse
+from django.http import HttpResponse, FileResponse, JsonResponse
 from django.shortcuts import render, redirect
 from django.utils.safestring import mark_safe
 import django_tables2 as tables
@@ -32,9 +32,17 @@ class EntryTable(tables.Table):
     class Meta:
         model = Entry
         # add class="paleblue" to <table> tag
-        attrs = {'class': 'paleblue'}
-        exclude = ('id', 'comments')
-        sequence = ('title', 'category', 'genre', 'callno', 'composer', 'arranger', 'instrument', 'media')
+        template_name = 'django_tables2/bootstrap-responsive.html'
+        attrs = {
+            'class': 'paleblue table table-bordered table-striped table-hover',
+            'id': 'entrytable',
+            'style': 'width: 100%'
+        }
+        exclude = ('id', 'comments','media')
+        fields = ('title','genre','composer','arranger')
+        orderable = False
+        empty_text = '-'
+        # sequence = ('title', 'category', 'genre', 'callno', 'composer', 'arranger', 'instrument', 'media')
 
 def is_number(zz):
     try:
@@ -61,13 +69,15 @@ def entry(request, item):
     return render(request, 'library/entry.twig', {'entry': entry, 'categories': categories, "can_edit": request.user.is_authenticated and request.user.is_staff, "limited": limited})
 
 
-@login_required
-def index(request):
+
+
+
+def indexdata(request):
     fff = Q()
     thewords = ""
     thecat = ""
     thegenre = ""
-    entries = Entry.objects
+
     limited = False
     limitcat = None
     incomplete = False
@@ -79,11 +89,13 @@ def index(request):
     if limited:
         fff = Q(category__code__exact=limitcat)&Q(completeness__usable=True)
     else:
-        if not 'incomplete' in request.GET:
-            incomplete = False
+        if not request.GET.get('incomplete', False):
+            error_log("EXCLUDE INCOMPLETE")
+            incomplete = ''
             fff = fff & Q(completeness__usable=True)
         else:
-            incomplete = True
+            error_log("INCLUDE INCOMPLETE")
+            incomplete = '1'
         if 'words' in request.GET:
             www = request.GET['words'].strip()
             if www:
@@ -104,16 +116,63 @@ def index(request):
                 cfilter = (Q(genre__exact=www))
                 fff = fff & cfilter
                 thegenre = int(www)
+                
+    
 
+    return fff, incomplete, thewords, thegenre, thecat, limited
+
+@login_required
+def index(request):
+    entries = Entry.objects
+    fff, incomplete, thewords, thegenre, thecat, limited = indexdata(request)
     if fff:
         table = EntryTable(entries.filter(fff))
     else:
         table = EntryTable(entries.all())
     if not request.user.is_staff:
         table.exclude = ('id', 'comments', 'callno', 'added', 'duration','incomplete')
-    RequestConfig(request, paginate={'per_page': 50}).configure(table)
+    # RequestConfig(request, paginate={'per_page': 50}).configure(table)
     return render(request, 'library/biglist.twig', {
         'entries': table,
+        'categories': Category.objects.all(),
+        'genres': Genre.objects.all(),
+        'thewords': thewords,
+        'thegenre': thegenre,
+        'thecat': thecat,
+        'limited': limited,
+        'incomplete': incomplete
+    })
+
+
+@login_required
+def index_json(request):
+    entries = Entry.objects
+    fff, incomplete, thewords, thegenre, thecat, limited = indexdata(request)
+    if fff:
+        theentries = entries.filter(fff)
+    else:
+        theentries = entries.all()
+
+    if not request.user.is_staff:
+        columns = ('id', 'title','genre__label','composer__surname','arranger__surname')
+        theentries = list(theentries.select_related('composer','arranger').values(*columns))
+    else:
+        columns = ('id','title','category__label','callno','genre__label','composer__surname','arranger__surname')
+        theentries = list(theentries.select_related('composer','arranger').values(*columns))
+    # RequestConfig(request, paginate={'per_page': 50}).configure(table)
+    return JsonResponse({'data': theentries, 'columns': columns})
+
+@login_required
+def entrylist(request):
+    # fff is a Q object and won't be instantiated
+    fff, incomplete, thewords, thegenre, thecat, limited = indexdata(request)
+    if not request.user.is_staff:
+        columns = (('id','ID'), ('title','Title'),('genre__label','Genre'),('composer__surname','Composer'),('arranger__surname', 'Arranger'))
+    else:
+        columns = (('id','ID'), ('title','Title'), ('category__label', 'Location'), ('callno', 'Label'),('genre__label','Genre'),('composer__surname','Composer'),('arranger__surname', 'Arranger'))
+        
+    return render(request, 'library/entrylist.twig', {
+        'columns': columns,
         'categories': Category.objects.all(),
         'genres': Genre.objects.all(),
         'thewords': thewords,
@@ -223,5 +282,7 @@ def logout_view(request):
     return redirect('/')
 
 def folderlist(request, folderid):
+    # TODO: speed up query - use prefetch_related to pull "slots" and "slots__entry"
     folder = Folder.objects.filter(pk__exact=folderid).first()
     return render(request, 'library/folderlist.twig', {'folder': folder})
+

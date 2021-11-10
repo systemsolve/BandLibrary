@@ -1,12 +1,16 @@
-from django.conf.urls import url
+from django.urls import path
 
-from . import views
+from . import views, api
 
 urlpatterns = [
-    url(r'^$', views.index, name='index'),
-    url(r'^entry/(?P<item>[0-9]+)/$', views.entry, name='entry'),
-    url(r'^incipit/(?P<item>[0-9]+)/$', views.incipit, name='incipit'),
-    url(r'^chip/(?P<item>[0-9]+)/$', views.chip, name='chip'),
-    url(r'^pagefile/(?P<name>.+)/$', views.pagefile, name='pagefile'),
-    url(r'^folder/(?P<folderid>.+)/$', views.folderlist, name='folderlist'),
+    path('', views.index, name='index'),
+    path('entrydata/', views.index_json, name='entrydata'),
+    path('entrylist/', views.entrylist, name='entrylist'),
+    path('entry/<int:item>/', views.entry, name='entry'),
+    path('incipit/<int:item>/', views.incipit, name='incipit'),
+    path('chip/<int:item>/', views.chip, name='chip'),
+    path('pagefile/<name>/', views.pagefile, name='pagefile'),
+    path('folder/<str:folderid>/', views.folderlist, name='folderlist'),
+    path('store/', api.StoreListView.as_view(), name='store-list'),
+    path('store/<int:pk>/', api.StoreItemView.as_view(), name='store-item')
 ]

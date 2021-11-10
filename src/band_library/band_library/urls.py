@@ -13,7 +13,8 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
-from django.conf.urls import include, url
+from django.conf import settings
+from django.urls import include, path
 from django.contrib import admin
 from django.http import HttpResponse
 
@@ -26,10 +27,16 @@ admin.site.index_title = "Welcome to Oakleigh Brass Library and Archive"
 admin.site.disable_action('delete_selected')
 
 urlpatterns = [
-    url(r'^$', views.top, name='home'),
-    url(r'^logout$', views.logout_view, name='logout'),
-    url(r'^library/', include('library.urls')),
-    url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
-    url(r'^admin/', admin.site.urls),
-    url(r'^robots.txt$', lambda r: HttpResponse("User-agent: *\nDisallow: /", content_type="text/plain")) 
+    path('', views.top, name='home'),
+    path('logout', views.logout_view, name='logout'),
+    path('library/', include('library.urls')),
+    path('admin/doc/', include('django.contrib.admindocs.urls')),
+    path('admin/', admin.site.urls),
+    path('robots.txt', lambda r: HttpResponse("User-agent: *\nDisallow: /", content_type="text/plain")) 
 ]
+
+if settings.DEVSYS and settings.DEBUG:
+    import debug_toolbar
+    urlpatterns = [
+        path('__debug__/', include(debug_toolbar.urls)),
+    ] + urlpatterns

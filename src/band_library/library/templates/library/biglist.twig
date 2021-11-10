@@ -4,6 +4,7 @@
 {% load static %}
 {% block styles %}
 <link rel="stylesheet" href="{% static 'django_tables2/themes/paleblue/css/screen.css' %}" />
+<link rel="stylesheet" href='https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css' />
 <style type="text/css">
 
 </style>
@@ -11,6 +12,7 @@
 {% block title %}
     <title>Catalogue Listing: OB</title>
 {% endblock %}
+
 {% block main %}
     <div class='row' id='nav'>
         <h3 class='col-md-4'><a href='/'>HOME</a></h3>
@@ -48,7 +50,9 @@
         </form>
     </div>
     {% endif %}
-    <div id="results">
+    <div id="results" class="row">
+        <div class="col-12">
         {% render_table entries 'django_tables2/bootstrap4.html' %}
+        </div>
     </div>
 {% endblock %}

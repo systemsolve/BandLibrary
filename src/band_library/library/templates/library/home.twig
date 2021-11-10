@@ -6,7 +6,7 @@
         
         <h1>Welcome to the Oakleigh Brass library catalogue</h1>
         {% if not limited %}
-        <form class="form-inline" action='/library/'>
+        <form class="form-inline" action='/library/entrylist/'>
             Keywords: <input class="form-control" type="text" name="words" value="{{thewords}}"> 
             Genre: 
             <select class="form-control" name="genre">
@@ -20,7 +20,7 @@
                     {% endif %}
                 {% endfor %}
             </select>
-            Category: 
+            Location: 
             <select class="form-control" name="category">
                 <option value="">All</option>
                 {% for opt in categories %}
@@ -35,7 +35,7 @@
             <input class="btn btn-primary" type="submit" value="Search Music">
         </form>
         {% endif %}
-        <h2><a href='/library/'>Full Listing</a></h2>
+        <h2><a href='/library/entrylist/'>Full Listing</a></h2>
         {% for folder in folders %}
             {% if forloop.first %}
             <h2>Music Folder Lists</h2>

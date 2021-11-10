@@ -121,7 +121,7 @@ class EmptyMediaFilter(admin.SimpleListFilter):
 
 class EntryAdmin(admin.ModelAdmin, ExportCsvMixin):
     list_display = ('title', 'genre', 'category', 'callno', 'composer', 'arranger', 'source', 'publisher', 'pubname', 'pubyear', 'estdecade', 'pagecount', 'condition', 'platecode', 'image_present','instrument','key','completeness' )
-    list_filter = ('category', 'genre','composer__country', 'completeness__usable', 'duplicate', 'completeness', ('key', admin.RelatedOnlyFieldListFilter), 'source', EmptyMediaFilter, ('provider', admin.RelatedOnlyFieldListFilter))
+    list_filter = ('category', 'genre','saleable', 'composer__country', 'completeness__usable', 'duplicate', 'completeness', ('key', admin.RelatedOnlyFieldListFilter), 'source', EmptyMediaFilter, ('provider', admin.RelatedOnlyFieldListFilter))
     search_fields = ['title', 'composer__given', 'composer__surname', 'arranger__surname','callno','comments', 'composer__realname__surname', 'arranger__realname__surname']
     readonly_fields = ('image_link', 'image_present')
     save_on_top = True
@@ -403,6 +403,11 @@ class LogEntryAdmin(admin.ModelAdmin):
         'object_link',
         'action_flag',
     ]
+    
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.select_related('content_type', 'user')  # no existing records will appear
+
 
     def has_add_permission(self, request):
         return False

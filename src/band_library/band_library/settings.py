@@ -23,9 +23,14 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'qoah5oay3-z8nqdwvi5%o9szr1pyir$_5cdqbg4a@mgj$k99ix'
 
 # SECURITY WARNING: don't run with debug turned on in production!
+DEVSYS = True
 DEBUG = True
 
 ALLOWED_HOSTS = ['library.oakleighband.org.au','devlibrary.oakleighband.org.au', 'azlibrary.oakleighband.org.au']
+
+INTERNAL_IPS = [
+    '165.225.227.53',
+]
 
 
 # Application definition
@@ -40,7 +45,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_tables2',
     'library',
-    'imagekit'
+    'imagekit',
+    'rest_framework'
 ]
 
 MIDDLEWARE = [
@@ -157,3 +163,34 @@ BL_CACHEDIR = os.path.join(BL_BASEDIR, 'mediacache')
 MEDIA_ROOT = BL_MEDIADIR
 MEDIA_URL = '/library/pagefile/'
 DJANGO_TABLES2_TEMPLATE = "django_tables2/bootstrap4.html"
+
+if DEVSYS and DEBUG:
+#    sys.stderr.write("SETTINGS INSTALL DEV APPS\n")
+
+#    sys.stderr.write("SETTINGS INSTALL DEBUG TB\n")
+    INSTALLED_APPS += ['debug_toolbar']
+    MIDDLEWARE += ['debug_toolbar.middleware.DebugToolbarMiddleware']
+    
+
+DEBUG_TOOLBAR_PANELS = [
+    'debug_toolbar.panels.versions.VersionsPanel',
+    'debug_toolbar.panels.timer.TimerPanel',
+    'debug_toolbar.panels.settings.SettingsPanel',
+    'debug_toolbar.panels.headers.HeadersPanel',
+    'debug_toolbar.panels.request.RequestPanel',
+    'debug_toolbar.panels.sql.SQLPanel',
+    'debug_toolbar.panels.staticfiles.StaticFilesPanel',
+    'debug_toolbar.panels.templates.TemplatesPanel',
+    'debug_toolbar.panels.cache.CachePanel',
+    'debug_toolbar.panels.signals.SignalsPanel',
+    'debug_toolbar.panels.logging.LoggingPanel',
+    'debug_toolbar.panels.redirects.RedirectsPanel',
+]
+
+DEBUG_TOOLBAR_CONFIG = {
+    'ROOT_TAG_EXTRA_ATTRS': 'class="hdr-plain"',
+    'DISABLE_PANELS': {
+        'debug_toolbar.panels.redirects.RedirectsPanel',
+        'debug_toolbar.panels.templates.TemplatesPanel'
+    },
+}

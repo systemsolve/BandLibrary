@@ -510,45 +510,11 @@ class TaskItem(models.Model):
     def clean(self):
         if not (self.entry or self.asset):
             raise ValidationError("Specify at least an entry and/or asset")
-        
-class Folder(models.Model):
-    label = models.CharField(max_length=256)
-    slot_count = models.IntegerField(default=35)
-    issue_date = models.DateField()
-    sidebar = tinymce_models.HTMLField(blank=True, null=True, help_text="Text to annotate the index.")
-    
-    def __str__(self):
-        return "%s (%d)" % (self.label, self.slot_count)
-    
-    @property
-    def alphabetic(self):
-        return self.slots.order_by('entry__label')
-    
-    @property
-    def numeric(self):
-        allslots = {}
-        
-        for ss in range(0, self.slot_count):
-            # prefill available slots
-            error_log("PREFILL '%s'" % str(ss+1))
-            allslots[str(ss+1)] = None
-            
-        for sss in self.slots.order_by('position'):
-            error_log("REFILL '%s'" % str(sss.position))
-            allslots[str(sss.position)] = sss
-            
-        error_log("SLOTS '%s'" % str(allslots))
-        return allslots
-    
-    class Meta:
-        verbose_name = "Music Folder"
-        ordering = ['label']
-    
-    
+
         
     
 class FolderItem(models.Model):
-    folder = models.ForeignKey(Folder, related_name="slots", on_delete=CASCADE)
+    folder = models.ForeignKey('Folder', related_name="slots", on_delete=CASCADE)
     entry = models.ForeignKey(Entry, related_name="folders", blank=True, null=True, on_delete=SET_NULL)
     comment = models.TextField(blank=True, null=True)
     version = models.CharField(max_length=5, blank=True, null=True)
@@ -569,4 +535,53 @@ class FolderItem(models.Model):
             return "E %s (%s) " % (str(self.entry), str(self.position))
         else:
             return "C %s (%s) " % (self.comment, str(self.position))
+        
+class FolderManager(models.Manager):
+    def get_queryset(self):
+        qs = super().get_queryset()
+        fiqs = FolderItem.objects.select_related('entry','entry__category')
+            
+            # it's really important to use the to_attr parameter, so that we get a list of the companies without incurring further DB hits
+
+#            family_preset = Prefetch('entity__family', queryset=pfqs, to_attr='companies')
+        qqs = qs.prefetch_related(models.Prefetch('slots', queryset=fiqs.order_by('entry__label'), to_attr='byname')).prefetch_related(models.Prefetch('slots', queryset=fiqs.order_by('position'), to_attr='byslot'))
+        return qqs
+        
+class Folder(models.Model):
+    label = models.CharField(max_length=256)
+    slot_count = models.IntegerField(default=35)
+    issue_date = models.DateField()
+    sidebar = tinymce_models.HTMLField(blank=True, null=True, help_text="Text to annotate the index.")
+    objects = FolderManager()
+    
+    def __str__(self):
+        return "%s (%d)" % (self.label, self.slot_count)
+    
+    @property
+    def alphabetic(self):
+#        return self.slots.order_by('entry__label')
+        return self.byname
+    
+    @property
+    def numeric(self):
+        allslots = {}
+        
+        for ss in range(0, self.slot_count):
+            # prefill available slots
+            error_log("PREFILL '%s'" % str(ss+1))
+            allslots[str(ss+1)] = None
+            
+        for sss in self.byslot:
+            error_log("REFILL '%s'" % str(sss.position))
+            allslots[str(sss.position)] = sss
+            
+        error_log("SLOTS '%s'" % str(allslots))
+        return allslots
+    
+    class Meta:
+        verbose_name = "Music Folder"
+        ordering = ['label']
+    
+    
+
     

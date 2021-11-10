@@ -1,0 +1,129 @@
+{% extends "library/base.twig" %}
+{# templates/library/biglist.twig #}
+{% load static %}
+{% block styles %}
+<!-- <link rel="stylesheet" href="{% static 'django_tables2/themes/paleblue/css/screen.css' %}" /> -->
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css"/>
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.dataTables.min.css"/>
+<style type="text/css">
+    /*
+    .form-field {
+        display: inline-block;
+
+    }
+    
+    .form-field .form-control {
+        display: inline;
+    }*/
+</style>
+{% endblock %}
+{% block title %}
+    <title>Catalogue Listing: OB</title>
+{% endblock %}
+{% block page_js %}
+
+
+<script type="text/javascript" src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
+
+<script type="text/javascript">
+    var showlink = function(data, type, row, meta) {
+        if (type === "display") {
+            // console.log("TITLE LINK " + data + " " + type + " " + row);
+            return "<a href='../entry/"+row.id+"/'>"+data+"</a>";
+        } else {
+            return data;
+        }
+    };
+    var dt_options = {
+        "responsive": true,
+        "ajax": '../entrydata/?words={{thewords}}&category={{thecategory}}&genre={{thegenre}}&incomplete={{incomplete}}',
+        dataSrc: 'data'
+    };
+    dt_options['order'] = [[1, 'asc']];
+    dt_options['columns'] = [
+    {% for col in columns %}        
+        {'name': '{{col.1}}', 'data': '{{col.0}}'}{% if not forloop.last %},{%endif%}
+    {% endfor %}
+    ];
+    // tweak display behaviour - really needs to go in the loop above
+    for (ccc in dt_options['columns']) {
+        if (dt_options['columns'][ccc]['data'] == 'id') {
+            dt_options['columns'][ccc]['visible'] = false;
+        }
+        if (dt_options['columns'][ccc]['data'] == 'title') {
+            dt_options['columns'][ccc]['render'] = showlink;
+        }
+    }
+
+    $(document).ready(function(){
+        $('#entrytable').DataTable(dt_options);
+    });
+</script>
+{% endblock %}
+{% block main %}
+    <div class='row' id='nav'>
+        <h3 class='col-md-4'><a href='/'>HOME</a></h3>
+    </div>
+    {% if not limited %}
+    
+        <form class="form-inline" action='/library/entrylist/'>
+            Keywords: <input class="form-control" type="text" name="words" value="{{thewords}}"> 
+            Genre: 
+            <select class="form-control" name="genre">
+                <option value="">All</option>
+                {% for opt in genres %}
+                    {# must have the same integer type #}
+                    {% if thegenre == opt.id %}
+                        <option selected value="{{opt.id}}">{{opt.label}}</option>
+                    {% else %}
+                        <option value="{{opt.id}}">{{opt.label}}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+            Location: 
+            <select class="form-control" name="category">
+                <option value="">All</option>
+                {% for opt in categories %}
+                    {# must have the same integer type #}
+                    {% if thecat == opt.id %}
+                        <option selected value="{{opt.id}}">{{opt.label}}</option>
+                    {% else %}
+                        <option value="{{opt.id}}">{{opt.label}}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+            include incomplete items <input type="checkbox" value="1" name="incomplete">
+            <input class="btn btn-primary" type="submit" value="Search Music">
+        </form>
+   
+    <hr/>
+    {% endif %}
+    <table id="entrytable" class="display">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Location</th>
+                <th>Label</th>
+                <th>Genre</th>
+                <th>Composer</th>
+                <th>Arranger</th>
+                
+            </tr>
+        </thead>
+        <tfoot>
+            <tr>
+               <th>ID</th>
+                <th>Title</th>
+                <th>Location</th>
+                <th>Label</th>
+                <th>Genre</th>
+                <th>Composer</th>
+                <th>Arranger</th>
+                
+            </tr>
+        </tfoot>
+    </table>
+
+{% endblock %}

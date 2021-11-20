@@ -303,6 +303,7 @@ class TaskAdmin(admin.ModelAdmin):
     
 
 class FolderFormSet(forms.BaseInlineFormSet):
+        
     def clean(self):
         cleaned_data = super().clean()
         scount = {}
@@ -371,6 +372,10 @@ class FolderItemAdmin(admin.TabularInline):
             return obj.slot_count
         else:
             return 35
+        
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.select_related('entry', 'entry__category', 'entry__genre', 'entry__composer')  # no existing records will appear
     
 class FolderAdmin(admin.ModelAdmin):
     list_display = ('label','slot_count')

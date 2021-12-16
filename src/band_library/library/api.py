@@ -17,17 +17,23 @@ from django_tables2.utils import A
 from django.views import View
 from .models import Category
 from .models import Entry
+from .models import EntryMedia
 from .models import Genre
 from .models import Folder
 import os
 import subprocess
 import sys
-from .utilx import error_log
+from .utilx import error_log, makeimage
 from django.core.serializers import serialize
 from django.forms.models import model_to_dict
 from rest_framework import serializers
 
 
+class EntryMediaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EntryMedia
+        fields = '__all__'
+        
 class EntrySerializer(serializers.ModelSerializer):
     class Meta:
         model = Entry
@@ -66,3 +72,21 @@ class StoreItemView(View):
 #        return HttpResponse(data, content_type="application/json")
         return JsonResponse(message)
 
+class StoreMediaView(View):
+    def get(self, request, *args, **kwargs):
+#        index = kwargs['pk']
+        entry = get_object_or_404(EntryMedia, pk=kwargs['pk'])
+        
+        return makeimage(entry.mfile.name, '', '')
+        
+#        eresponse = EntryMediaSerializer(instance=entry).data
+##        print("%s" % str(eresponse), file=sys.stderr)
+#        message = {
+#            'type': 'detail',
+#            'text': 'media!',
+#            'entry': eresponse,
+#        }
+#        
+#        # data = serialize("json", [message])
+##        return HttpResponse(data, content_type="application/json")
+#        return JsonResponse(message)

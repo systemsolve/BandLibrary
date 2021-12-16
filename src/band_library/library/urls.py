@@ -12,5 +12,6 @@ urlpatterns = [
     path('pagefile/<name>/', views.pagefile, name='pagefile'),
     path('folder/<str:folderid>/', views.folderlist, name='folderlist'),
     path('store/', api.StoreListView.as_view(), name='store-list'),
-    path('store/<int:pk>/', api.StoreItemView.as_view(), name='store-item')
+    path('store/<int:pk>/', api.StoreItemView.as_view(), name='store-item'),
+    path('store/media/<int:pk>/', api.StoreMediaView.as_view(), name='store-media')
 ]

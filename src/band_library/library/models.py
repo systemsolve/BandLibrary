@@ -141,6 +141,12 @@ class Ensemble(models.Model):
     
     def __str__(self):
         return self.name
+    
+class EntryManager(models.Manager):
+    def get_queryset(self):
+        qs = super().get_queryset()
+        
+        return qs.select_related('category','genre')
 
 class Entry(models.Model):
     title = models.CharField(max_length=200)
@@ -177,6 +183,8 @@ class Entry(models.Model):
     # allow nulls initially
     completeness = models.ForeignKey('Completeness', blank=True, null=True, related_name="+", on_delete=SET_NULL)
     duplicate = models.BooleanField(default=False, verbose_name='Already in library?')
+    
+    objects = EntryManager()
 
     class Meta:
         #unique_together = ('callno', 'category')
@@ -532,7 +540,7 @@ class FolderItem(models.Model):
     
     def __str__(self):
         if self.entry:
-            return "E %s (%s) " % (str(self.entry), str(self.position))
+            return "E %s (%s) " % (str(self.entry.title), str(self.position))
         else:
             return "C %s (%s) " % (self.comment, str(self.position))
         
@@ -544,7 +552,7 @@ class FolderManager(models.Manager):
             # it's really important to use the to_attr parameter, so that we get a list of the companies without incurring further DB hits
 
 #            family_preset = Prefetch('entity__family', queryset=pfqs, to_attr='companies')
-        qqs = qs.prefetch_related(models.Prefetch('slots', queryset=fiqs.order_by('entry__label'), to_attr='byname')).prefetch_related(models.Prefetch('slots', queryset=fiqs.order_by('position'), to_attr='byslot'))
+        qqs = qs.prefetch_related('slots').prefetch_related(models.Prefetch('slots', queryset=fiqs.order_by('entry__label'), to_attr='byname')).prefetch_related(models.Prefetch('slots', queryset=fiqs.order_by('position'), to_attr='byslot'))
         return qqs
         
 class Folder(models.Model):

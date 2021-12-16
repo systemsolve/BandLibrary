@@ -17,7 +17,7 @@ from .models import Folder
 import os
 import subprocess
 import sys
-from .utilx import error_log
+from .utilx import error_log, makeimage
 
 class EntryTable(tables.Table):
     title = tables.LinkColumn('entry', args=[A('pk')])
@@ -66,7 +66,7 @@ def entry(request, item):
         entry = Entry.objects.filter(id__exact=item).first()
         categories = Category.objects.all();
 
-    return render(request, 'library/entry.twig', {'entry': entry, 'categories': categories, "can_edit": request.user.is_authenticated and request.user.is_staff, "limited": limited})
+    return render(request, 'library/entry.twig', {'devsys': settings.DEVSYS, 'entry': entry, 'categories': categories, "can_edit": request.user.is_authenticated and request.user.is_staff, "limited": limited})
 
 
 
@@ -133,6 +133,7 @@ def index(request):
         table.exclude = ('id', 'comments', 'callno', 'added', 'duration','incomplete')
     # RequestConfig(request, paginate={'per_page': 50}).configure(table)
     return render(request, 'library/biglist.twig', {
+        'devsys': settings.DEVSYS, 
         'entries': table,
         'categories': Category.objects.all(),
         'genres': Genre.objects.all(),
@@ -172,6 +173,7 @@ def entrylist(request):
         columns = (('id','ID'), ('title','Title'), ('category__label', 'Location'), ('callno', 'Label'),('genre__label','Genre'),('composer__surname','Composer'),('arranger__surname', 'Arranger'))
         
     return render(request, 'library/entrylist.twig', {
+        'devsys': settings.DEVSYS, 
         'columns': columns,
         'categories': Category.objects.all(),
         'genres': Genre.objects.all(),
@@ -186,7 +188,7 @@ def entrylist(request):
 #mediadir = os.path.join(basedir, 'media')
 #cachedir = os.path.join(basedir, 'mediacache')
 mediadir = settings.BL_MEDIADIR
-cachedir = settings.BL_CACHEDIR
+
 
 @login_required
 def incipit(request, item):
@@ -219,24 +221,7 @@ def pagefile(request, name):
     response['Last-Modified'] = datetime.datetime.utcfromtimestamp(modtime).strftime("%a, %d %b %y %H:%M:%S GMT")
     return response
 
-def makeimage(fname, res, prefix):
-    target = prefix + fname
-    try:
-#        error_log("open %s" % os.path.join(cachedir, target + ".jpg"))
-        ffc = open(os.path.join(cachedir, target + ".jpg"), "rb")
-    except:
-        error_log("convert %s" % os.path.join(mediadir, fname))
-        command = "pdftoppm -singlefile %s -jpeg \"%s\" \"%s\"" % (res, os.path.join(mediadir, fname), os.path.join(cachedir, target))
-        error_log("command %s" % command)
-        subprocess.call(command, shell=True)
-        ffc = open(os.path.join(cachedir, target + ".jpg"), "rb")
 
-    response = FileResponse(ffc, content_type="image/jpeg", charset='C')
-    response['Cache-Control'] = "public"
-
-    modtime = os.path.getmtime(os.path.join(cachedir, target + ".jpg"))
-    response['Last-Modified'] = datetime.datetime.utcfromtimestamp(modtime).strftime("%a, %d %b %y %H:%M:%S GMT")
-    return response
 
 
 def top(request):
@@ -271,6 +256,7 @@ def top(request):
     folders = Folder.objects.all()
 
     return render(request, 'library/home.twig', {
+        'devsys': settings.DEVSYS, 
         'categories': categories,
         'genres': genres,
         'folders': folders,
@@ -284,5 +270,5 @@ def logout_view(request):
 def folderlist(request, folderid):
     # TODO: speed up query - use prefetch_related to pull "slots" and "slots__entry"
     folder = Folder.objects.filter(pk__exact=folderid).first()
-    return render(request, 'library/folderlist.twig', {'folder': folder})
+    return render(request, 'library/folderlist.twig', {'devsys': settings.DEVSYS, 'folder': folder})
 

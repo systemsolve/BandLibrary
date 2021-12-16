@@ -3,55 +3,54 @@
     <title>Oakleigh Brass Catalogue</title>
 {% endblock %}
 {% block main %}
-        
-        <h1>Welcome to the Oakleigh Brass library catalogue</h1>
-        {% if not limited %}
-        <form class="form-inline" action='/library/entrylist/'>
-            Keywords: <input class="form-control" type="text" name="words" value="{{thewords}}"> 
-            Genre: 
-            <select class="form-control" name="genre">
-                <option value="">All</option>
-                {% for opt in genres %}
-                    {# must have the same integer type #}
-                    {% if thegenre == opt.id %}
-                        <option selected value="{{opt.id}}">{{opt.label}}</option>
-                    {% else %}
-                        <option value="{{opt.id}}">{{opt.label}}</option>
-                    {% endif %}
-                {% endfor %}
-            </select>
-            Location: 
-            <select class="form-control" name="category">
-                <option value="">All</option>
-                {% for opt in categories %}
-                    {# must have the same integer type #}
-                    {% if thecat == opt.id %}
-                        <option selected value="{{opt.id}}">{{opt.label}}</option>
-                    {% else %}
-                        <option value="{{opt.id}}">{{opt.label}}</option>
-                    {% endif %}
-                {% endfor %}
-            </select>
-            <input class="btn btn-primary" type="submit" value="Search Music">
-        </form>
+    <h1>Welcome to the Oakleigh Brass library catalogue</h1>
+    {% if not limited %}
+    <form class="form-inline" action='/library/entrylist/'>
+        Keywords: <input class="form-control" type="text" name="words" value="{{thewords}}">
+        Genre:
+        <select class="form-control" name="genre">
+            <option value="">All</option>
+            {% for opt in genres %}
+                {# must have the same integer type #}
+                {% if thegenre == opt.id %}
+                    <option selected value="{{opt.id}}">{{opt.label}}</option>
+                {% else %}
+                    <option value="{{opt.id}}">{{opt.label}}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+        Location:
+        <select class="form-control" name="category">
+            <option value="">All</option>
+            {% for opt in categories %}
+                {# must have the same integer type #}
+                {% if thecat == opt.id %}
+                    <option selected value="{{opt.id}}">{{opt.label}}</option>
+                {% else %}
+                    <option value="{{opt.id}}">{{opt.label}}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+        <input class="btn btn-primary" type="submit" value="Search Music">
+    </form>
+    {% endif %}
+    <h2><a href='/library/entrylist/'>Full Listing</a></h2>
+    {% for folder in folders %}
+        {% if forloop.first %}
+        <h2>Music Folder Lists</h2>
+        <ul>
         {% endif %}
-        <h2><a href='/library/entrylist/'>Full Listing</a></h2>
-        {% for folder in folders %}
-            {% if forloop.first %}
-            <h2>Music Folder Lists</h2>
-            <ul>
-            {% endif %}
-            <li><a href="{% url 'folderlist' folder.id %}">{{ folder.label }}</a> - as at {{ folder.issue_date }}
-            {% if forloop.last %}
-            </ul>
-            {% endif %}
-        {% empty %}
-            <h2>No music folder lists yet</h2>
-        {% endfor %}
-        {% if user.is_staff %}
-        <p><a href='/admin/'>Admin: authorised users only</a></p>
+        <li><a href="{% url 'folderlist' folder.id %}">{{ folder.label }}</a> - as at {{ folder.issue_date }}
+        {% if forloop.last %}
+        </ul>
         {% endif %}
-        <hr>
-        <a href='/logout'>Log out</a>
-        
+    {% empty %}
+        <h2>No music folder lists yet</h2>
+    {% endfor %}
+    {% if user.is_staff %}
+    <p><a href='/admin/'>Admin: authorised users only</a></p>
+    {% endif %}
+    <hr>
+    <a href='/logout'>Log out</a>
+
 {% endblock %}

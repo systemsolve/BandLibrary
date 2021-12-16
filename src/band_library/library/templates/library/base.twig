@@ -25,6 +25,7 @@
     </head>
     <body>
         <div class="container-fluid">
+            {% if devsys %}<h4>[Development System]</h4>{% endif %}
             {% block main %}
             {% endblock %}
         </div>

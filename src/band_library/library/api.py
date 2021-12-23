@@ -20,6 +20,7 @@ from .models import Entry
 from .models import EntryMedia
 from .models import Genre
 from .models import Folder
+from .models import Author
 import os
 import subprocess
 import sys
@@ -27,23 +28,93 @@ from .utilx import error_log, makeimage
 from django.core.serializers import serialize
 from django.forms.models import model_to_dict
 from rest_framework import serializers
+from django.http import Http404
+""" 
+        class Author {
+            public $id;
+            public $surname;
+            public $given;
+            public $bornyear;
+            public $diedyear;
+            public $country;
+            public $realname; // Author
+        }
+        
+        class BLEntry {
+            public $title;
+            public $pubyear;
+            public $id;
+            public $duration;
+            public $fee;
+            public $perfnotes;
+            public $genre;
+            public $ensemble;
+            public $publisher;
+            public $composer; // Author
+            public $arranger; // Author
+        }
+"""
 
 
-class EntryMediaSerializer(serializers.ModelSerializer):
+#class EntryMediaSerializer(serializers.ModelSerializer):
+#    class Meta:
+#        model = EntryMedia
+#        fields = '__all__'
+
+class AuthorSerializer(serializers.ModelSerializer):
+    country = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field='name'
+    )
+    full_name = serializers.SerializerMethodField()
+
+    def get_full_name(self, obj):
+        
+        if obj.realname:
+            return "%s %s [%s]" % (obj.given, obj.surname, self.get_full_name(obj.realname))
+            
+        if obj.bornyear or obj.diedyear:
+            dates = " (%s-%s)" % (str(obj.bornyear) if obj.bornyear else "", str(obj.diedyear) if obj.diedyear else "")
+        else:
+            dates = ""
+            
+        return "%s %s%s%s" % (obj.given, obj.surname, dates, " - %s" % obj.country.name if obj.country else "")
+    
     class Meta:
-        model = EntryMedia
-        fields = '__all__'
+        model = Author
+        fields = ['surname','given','bornyear','diedyear','country','realname','full_name']
+        depth = 2
+        
+    def get_fields(self):
+        fields = super().get_fields()
+        fields['realname'] = AuthorSerializer(many=False)
+        return fields
         
 class EntrySerializer(serializers.ModelSerializer):
+    genre = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field='label'
+    )
+    ensemble = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field='name'
+    )
+    publisher = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field='name'
+    )
+    composer = AuthorSerializer()
+    arranger = AuthorSerializer()
     class Meta:
         model = Entry
-        fields = '__all__'
+        fields = ['id','title','duration','fee','perfnotes','genre','ensemble','composer','arranger','publisher']
+        depth = 2
 
 class StoreListView(View):
     def get(self, request, *args, **kwargs):
         entries = Entry.objects.filter(saleable=True).values('id', 'title','composer__surname','arranger__surname','ensemble__name', 'duration', 'fee')
         message = {
-            'type': 'greeting',
+            'type': 'BLCatalogue',
             'text': 'hello world',
             'entries': list(entries)
         }
@@ -52,7 +123,14 @@ class StoreListView(View):
 class StoreItemView(View):
     def get(self, request, *args, **kwargs):
 #        index = kwargs['pk']
-        entry = get_object_or_404(Entry, pk=kwargs['pk'], saleable=True)
+
+        try:
+            entries = Entry.objects.filter(saleable=True, pk=kwargs['pk']).select_related('composer','arranger','ensemble')
+        except Entry.DoesNotExist:
+            raise Http404("No such entry")
+        
+        entry = entries[0]
+
         advert = entry.related_media.filter(asthumb=True).first()
         if advert:
             advertid = advert.id
@@ -62,8 +140,8 @@ class StoreItemView(View):
         eresponse = EntrySerializer(instance=entry).data
 #        print("%s" % str(eresponse), file=sys.stderr)
         message = {
-            'type': 'detail',
-            'text': 'entry!',
+            'type': 'BLEntry',
+            'text': 'entry!XXX',
             'entry': eresponse,
             'advert': advertid
         }

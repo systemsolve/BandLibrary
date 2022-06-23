@@ -1,0 +1,21 @@
+{% extends 'admin/base.html' %}
+{% block extrastyle %}
+    {{ block.super }}
+    <style>
+    ul.messagelist li.debug {
+        background-color: lightblue;
+        background-image: url(../img/icon-alert.svg);
+    }
+    </style>
+{% endblock %}
+{% block content %}
+    <p># ID, Cat, Title, Label, Ensemble, Duration, Composer, Arranger, Force</p>
+    <p>names in single cell: surname, given</p>
+    <div>
+        <form action="." method="POST" enctype="multipart/form-data">
+            {{ form.as_p }}
+            {% csrf_token %}
+                <button type="submit">Upload CSV</button>
+        </form>
+    </div>
+{% endblock %}

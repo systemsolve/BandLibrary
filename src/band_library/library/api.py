@@ -29,7 +29,7 @@ from django.core.serializers import serialize
 from django.forms.models import model_to_dict
 from rest_framework import serializers
 from django.http import Http404
-""" 
+"""
         class Author {
             public $id;
             public $surname;
@@ -39,7 +39,7 @@ from django.http import Http404
             public $country;
             public $realname; // Author
         }
-        
+
         class BLEntry {
             public $title;
             public $pubyear;
@@ -67,29 +67,37 @@ class AuthorSerializer(serializers.ModelSerializer):
         slug_field='name'
     )
     full_name = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
+
+    def get_name(self, obj):
+
+        if False and obj.realname:
+            return "%s %s [%s]" % (obj.given, obj.surname, self.get_name(obj.realname))
+
+        return "%s %s" % (obj.given, obj.surname)
 
     def get_full_name(self, obj):
-        
+
         if obj.realname:
             return "%s %s [%s]" % (obj.given, obj.surname, self.get_full_name(obj.realname))
-            
+
         if obj.bornyear or obj.diedyear:
             dates = " (%s-%s)" % (str(obj.bornyear) if obj.bornyear else "", str(obj.diedyear) if obj.diedyear else "")
         else:
             dates = ""
-            
+
         return "%s %s%s%s" % (obj.given, obj.surname, dates, " - %s" % obj.country.name if obj.country else "")
-    
+
     class Meta:
         model = Author
-        fields = ['surname','given','bornyear','diedyear','country','realname','full_name']
+        fields = ['surname','given','bornyear','diedyear','country','realname','full_name','name']
         depth = 2
-        
+
     def get_fields(self):
         fields = super().get_fields()
         fields['realname'] = AuthorSerializer(many=False)
         return fields
-        
+
 class EntrySerializer(serializers.ModelSerializer):
     genre = serializers.SlugRelatedField(
         read_only=True,
@@ -112,21 +120,25 @@ class EntrySerializer(serializers.ModelSerializer):
 
 class StoreListView(View):
     def get(self, request, *args, **kwargs):
-        entries = Entry.objects.filter(saleable=True).values('id', 'title','composer__surname','arranger__surname','ensemble__name', 'duration', 'fee')
+        entries = Entry.objects.filter(saleable=True).select_related('composer','arranger','ensemble','genre')
+        eresponse = EntrySerializer(entries, many=True)
         message = {
             'type': 'BLCatalogue',
             'text': 'hello world',
-            'entries': list(entries)
+            'entries': eresponse.data
         }
         return JsonResponse(message)
-    
+
 class StoreItemView(View):
     def get(self, request, *args, **kwargs):
 #        index = kwargs['pk']
 
         try:
-            entries = Entry.objects.filter(saleable=True, pk=kwargs['pk']).select_related('composer','arranger','ensemble')
+            entries = Entry.objects.filter(saleable=True, pk=kwargs['pk']).select_related('composer','arranger','ensemble','genre')
         except Entry.DoesNotExist:
+            raise Http404("No such entry")
+
+        if len(entries) == 0:
             raise Http404("No such entry")
         
         entry = entries[0]
@@ -136,7 +148,7 @@ class StoreItemView(View):
             advertid = advert.id
         else:
             advertid = None
-        
+
         eresponse = EntrySerializer(instance=entry).data
 #        print("%s" % str(eresponse), file=sys.stderr)
         message = {
@@ -145,7 +157,7 @@ class StoreItemView(View):
             'entry': eresponse,
             'advert': advertid
         }
-        
+
         # data = serialize("json", [message])
 #        return HttpResponse(data, content_type="application/json")
         return JsonResponse(message)
@@ -153,18 +165,16 @@ class StoreItemView(View):
 class StoreMediaView(View):
     def get(self, request, *args, **kwargs):
 #        index = kwargs['pk']
-        entry = get_object_or_404(EntryMedia, pk=kwargs['pk'])
+        try:
+            entries = Entry.objects.filter(saleable=True, pk=kwargs['pk']).select_related(None)
+        except Entry.DoesNotExist:
+            raise Http404("No such entry")
         
-        return makeimage(entry.mfile.name, '', '')
-        
-#        eresponse = EntryMediaSerializer(instance=entry).data
-##        print("%s" % str(eresponse), file=sys.stderr)
-#        message = {
-#            'type': 'detail',
-#            'text': 'media!',
-#            'entry': eresponse,
-#        }
-#        
-#        # data = serialize("json", [message])
-##        return HttpResponse(data, content_type="application/json")
-#        return JsonResponse(message)
+        if len(entries) == 0:
+            raise Http404("No such entry")
+
+        media = entries[0].media
+        if media:
+            return makeimage(media.name, '', '')
+        else:
+            raise Http404("No media")

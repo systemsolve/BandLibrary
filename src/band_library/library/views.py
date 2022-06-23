@@ -66,7 +66,13 @@ def entry(request, item):
         entry = Entry.objects.filter(id__exact=item).first()
         categories = Category.objects.all();
 
-    return render(request, 'library/entry.twig', {'devsys': settings.DEVSYS, 'entry': entry, 'categories': categories, "can_edit": request.user.is_authenticated and request.user.is_staff, "limited": limited})
+    return render(request, 'library/entry.twig', {
+        'devsys': settings.DEVSYS, 
+        'entry': entry, 
+        'categories': categories, 
+        'genres': Genre.objects.all(), 
+        "can_edit": request.user.is_authenticated and request.user.is_staff, 
+        "limited": limited})
 
 
 
@@ -123,6 +129,8 @@ def indexdata(request):
 
 @login_required
 def index(request):
+    if request.method == 'POST':
+        return redirect('/')
     entries = Entry.objects
     fff, incomplete, thewords, thegenre, thecat, limited = indexdata(request)
     if fff:
@@ -241,6 +249,8 @@ def top(request):
         # Return an 'invalid login' error message.
 
             return render(request, 'library/login.twig')
+    if request.method == 'POST':
+        return redirect('/')
 
     limited = False
     limitcat = None

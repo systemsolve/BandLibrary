@@ -1,4 +1,4 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.admin.widgets import AdminFileWidget
 from django.contrib.admin import SimpleListFilter
 from django.db import models
@@ -10,7 +10,9 @@ from django.contrib.auth.models import User
 
 from django.contrib.admin.models import LogEntry, DELETION
 from django.utils.html import escape
-from django.urls import reverse
+from django.urls import reverse, path
+from django.shortcuts import render, redirect
+from django.conf import settings
 from django import forms
 
 from .models import Author
@@ -118,9 +120,12 @@ class EmptyMediaFilter(admin.SimpleListFilter):
             else:
                 return queryset.filter(media__isnull=False)
         return queryset
+    
+class CsvImportForm(forms.Form):
+    csv_file = forms.FileField()
 
 class EntryAdmin(admin.ModelAdmin, ExportCsvMixin):
-    list_display = ('title', 'genre', 'category', 'callno', 'composer', 'arranger', 'source', 'publisher', 'pubname', 'pubyear', 'estdecade', 'pagecount', 'condition', 'platecode', 'image_present','instrument','key','completeness' )
+    list_display = ('title', 'genre', 'category', 'callno_format', 'composer', 'arranger', 'source', 'publisher', 'pubname', 'pubyear', 'estdecade', 'pagecount', 'condition', 'platecode', 'image_present','instrument','key','completeness' )
     list_filter = ('category', 'genre','saleable', 'composer__country', 'completeness__usable', 'duplicate', 'completeness', ('key', admin.RelatedOnlyFieldListFilter), 'source', EmptyMediaFilter, ('provider', admin.RelatedOnlyFieldListFilter))
     search_fields = ['title', 'composer__given', 'composer__surname', 'arranger__surname','callno','comments', 'composer__realname__surname', 'arranger__realname__surname']
     readonly_fields = ('image_link', 'image_present')
@@ -129,6 +134,8 @@ class EntryAdmin(admin.ModelAdmin, ExportCsvMixin):
     autocomplete_fields = ['composer','arranger','provider']
     actions = ["export_as_csv"]
     inlines = [ MediaAdmin, SeeAlsoAdmin, WebLinkAdmin ]
+    
+    
 
     formfield_overrides = {
         models.TextField: {'widget': Textarea(
@@ -151,6 +158,146 @@ class EntryAdmin(admin.ModelAdmin, ExportCsvMixin):
         #error_log("AUTHOR QS: %s" % qs.query)
         return qs
     """
+    
+    def callno_format(self, instance):
+        return "%.8g" % instance.callno
+    
+    callno_format.admin_order_field = 'callno'
+    callno_format.short_description = 'Label'
+        
+    
+    def import_csv(self, request):
+        from io import StringIO
+        import decimal
+        if request.method == "POST":
+            if getattr(settings, 'CSV_DEBUG', False):
+                messages.set_level(request, messages.DEBUG)
+            csv_file = request.FILES["csv_file"]
+            fp = StringIO(csv_file.read().decode('utf-8'))
+#file_content = list(csv.reader(fp, delimiter=';', quotechar='"'))
+            dataReader = csv.reader(fp)
+            catcache = {}
+            enscache = {}
+            entrylist = []
+            defcomplete = Completeness.objects.filter(label='Complete').first()
+            # Create Entry objects from passed in data
+            # ...
+            # ID, Cat, Title, Label, Ensemble, Duration, Composer, Arranger, Force
+            rowno = 0
+            errors = 0
+            for prow in dataReader:
+                rowno += 1
+                error_log("ENTRY LINE %d: %s" % (rowno, str(prow)))
+                
+                # prow[0] is the internal ID of the entry - evebtually use it as an updater
+                self.message_user(request, "ENTRY LINE: %s" % str(prow), messages.DEBUG)
+                if rowno == 1:
+                    self.message_user(request, "SKIP HEADER")
+                    continue
+                self.message_user(request, "CHECK CAT: %s" % str(prow[1]))
+                if prow[1] not in catcache:
+                    category = Category.objects.filter(code__exact=prow[1]).first()
+                    error_log("Entry CAT: %s" % str(category))
+                    self.message_user(request,"Entry CAT: %s" % str(category), messages.DEBUG)
+                    if category:
+                        catcache[prow[1]] = category
+                    else:
+                        self.message_user(request,"Entry CAT: %s NOT FOUND" % str(prow[1]), messages.ERROR)
+                        errors += 1
+                        continue
+                else:
+                    self.message_user(request,"Entry CAT: %s HIT" % str(prow[1]), messages.DEBUG)
+                    category = catcache[prow[1]]
+                
+                self.message_user(request, "CHECK ENSE: %s" % str(prow[4]), messages.DEBUG)
+                if prow[4].lower() not in enscache:
+                    ensemble = Ensemble.objects.filter(name__iexact=prow[4]).first()
+                    self.message_user(request,"Entry ENSEMBLE: %s => %s" % (prow[4], str(ensemble)), messages.DEBUG)
+                    if ensemble:
+                        enscache[prow[4].lower()] = ensemble
+                    else:
+                        self.message_user(request,"Entry ENSEMBLE: %s NOT FOUND" % str(prow[4]), messages.ERROR)
+                        errors += 1
+                        continue
+                else:
+                    self.message_user(request,"Entry ENSEMBLE: %s HIT" % str(prow[4]), messages.DEBUG)
+                    ensemble = enscache[prow[4].lower()]
+                    
+                force = len(prow) >= 9 and prow[8]
+                
+                
+                
+                title = ' '.join(prow[2].split())
+                title = ', '.join(title.split(','))
+                label_str = ' '.join(prow[3].split())
+                label = decimal.Decimal(label_str)
+                
+                previous = Entry.objects.filter(category=category, callno=label).first()
+                
+                if previous and not force:
+                    self.message_user(request,"Existing entry: %s" % str(previous), messages.ERROR)
+                    errors += 1
+                    continue
+
+                duration = prow[5]
+                composer = prow[6].split(',')
+                arranger = prow[7].split(',')
+                
+                composer = Author.find(composer)
+                arranger = Author.find(arranger)
+                if composer:
+                    self.message_user(request,"Found composer: %s" % str(composer), messages.DEBUG)
+                    
+                if arranger:
+                    self.message_user(request,"Found arranger: %s" % str(arranger), messages.DEBUG)
+                    
+                if not previous:
+                    newentry = Entry(
+                        category=category,
+                        callno=label,
+                        title=title,
+                        ensemble=ensemble,
+                        duration=duration,
+                        composer=composer,
+                        arranger=arranger,
+                        completeness=defcomplete
+                        )
+                    self.message_user(request, "New Entry: %s" % str(newentry))
+                
+                    entrylist.append(newentry)
+                else:
+                    self.message_user(request, "Replace Entry: %s" % str(previous))
+                    previous.category = category
+                    previous.callno=prow[3]
+                    previous.title=title
+                    previous.ensemble=ensemble
+                    previous.duration=duration
+                    previous.composer=composer
+                    previous.arranger=arranger
+                    previous.completeness=defcomplete
+                    entrylist.append(previous)
+                
+            if errors == 0:
+                for eee in entrylist:
+                    eee.save()
+                    
+                self.message_user(request, "Your csv file has been imported")
+            else:
+                self.message_user(request, "%d errors: no import" % errors, messages.ERROR)
+            return redirect(".")
+#                return redirect("..")
+        form = CsvImportForm()
+        payload = {"form": form}
+        return render(
+            request, "admin/csv_form.twig", payload
+        )
+    
+    def get_urls(self):
+        urls = super().get_urls()
+        my_urls = [
+            path('import-csv/', self.import_csv),
+        ]
+        return my_urls + urls
 
     def image_link(self, instance):
         error_log("IMAGE LINK: %s %s" % (str(instance.media), str(instance.id)))

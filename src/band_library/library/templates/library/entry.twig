@@ -6,9 +6,21 @@
 {% block main %}
     {% if not limited %}
     <div class="searcher" style="margin-top: 20px;">
-    <form class="form-inline" action='/library/'>
+    <form class="form-inline" action='/library/entrylist/'>
         Keywords: <input class="form-control" type="text" name="words" value="{{thewords}}">
-        Category:
+        Genre:
+        <select class="form-control" name="genre">
+            <option value="">All</option>
+            {% for opt in genres %}
+                {# must have the same integer type #}
+                {% if thegenre == opt.id %}
+                    <option selected value="{{opt.id}}">{{opt.label}}</option>
+                {% else %}
+                    <option value="{{opt.id}}">{{opt.label}}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+        Location:
         <select class="form-control" name="category">
             <option value="">All</option>
             {% for opt in categories %}
@@ -47,17 +59,23 @@
                 {% endif %}
                 <tr>
                     <td>Composer:</td>
-                    <td>{{ entry.composer.given }} {{ entry.composer.surname }}
+                    <td>{{ entry.composer.given }} {{ entry.composer.surname }} {% if entry.composer.bornyear or entry.composer.diedyear %}[{{ entry.composer.bornyear }}-{{ entry.composer.diedyear }}]{% endif %}
                     {% if entry.composer.realname %}
                         (real name: {{ entry.composer.realname.given }} {{ entry.composer.realname.surname }})
+                    {% endif %}
+                    {% if entry.composer.country %}
+                        - {{ entry.composer.country.name }}
                     {% endif %}
                     </td>
                 </tr>
                 <tr>
                     <td>Arranger:</td>
-                    <td>{% if entry.arranger %}{{ entry.arranger.given }} {{ entry.arranger.surname }}
+                    <td>{% if entry.arranger %}{{ entry.arranger.given }} {{ entry.arranger.surname }} {% if entry.arranger.bornyear or entry.arranger.diedyear %}[{{ entry.arranger.bornyear }}-{{ entry.arranger.diedyear }}]{% endif %}
                         {% if entry.arranger.realname %}
                             (real name: {{ entry.arranger.realname.given }} {{ entry.arranger.realname.surname }})
+                        {% endif %}
+                        {% if entry.arranger.country %}
+                        - {{ entry.arranger.country.name }}
                         {% endif %}
                     {% endif %}</td>
                 </tr>

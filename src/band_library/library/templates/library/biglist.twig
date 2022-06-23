@@ -12,7 +12,15 @@
 {% block title %}
     <title>Catalogue Listing: OB</title>
 {% endblock %}
-
+{% block page_js %}
+<script type="text/javascript" src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/1.11.3/js/dataTables.bootstrap.min.js"></script>
+<script>
+$(document).ready(function(){
+ $('#entrytable').DataTable();
+});
+</script>
+{% endblock %}
 {% block main %}
     <div class='row' id='nav'>
         <h3 class='col-md-4'><a href='/'>HOME</a></h3>

@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from .utilx import error_log
 
 from django.contrib.auth.models import User
+import decimal
 
 def get_full_name(self):
     if self.first_name:
@@ -18,21 +19,35 @@ def get_full_name(self):
 
 User.add_to_class("__str__", get_full_name)
 
-class LabelField(models.CharField):
+# a label consists of two numbers: physical-item . musical-item (starts at 0) - so a piece with two parts has 1234 and 1234.1
+# the issue is that 1234.1 is not the same as 1234.10
+# perhaps the way is to make 1234.1 into 1234.01
 
-    def from_db_value(self, value, expression, connection, context):
+class LabelField(models.DecimalField):
+    decimal_digits = 2
+    max_digits = 8
+
+    def from_db_value(self, value, expression, connection):
         if value is None:
             return value
-        return value.lstrip("0")
+#        vvv = decimal.Decimal(value.lstrip("0"))
+        vvv = value
+        error_log("LABEL: FROM DB %s" % str(vvv))
+        return vvv.normalize()
 
     def get_prep_value(self, value):
-        value = super(LabelField, self).get_prep_value(value)
-        value = "00000000000" + value
-        return value[-self.max_length:]
+        value = super().get_prep_value(value)
+        error_log("LABEL: GET PREP %s" % str(value))
+#        value = "00000000000" + value
+#        return value[-self.max_length:]
+        return value
 
     def to_python(self, value):
-        value = super(LabelField, self).to_python(value)
-        return value.lstrip("0")
+        value = super().to_python(value)
+        #        vvv = decimal.Decimal(value.lstrip("0"))
+        vvv = value
+        error_log("LABEL: TO PYTHON %s" % str(vvv))
+        return vvv.normalize()
 
 class Source(models.Model):
     label = models.CharField(max_length=200)
@@ -150,7 +165,8 @@ class EntryManager(models.Manager):
 
 class Entry(models.Model):
     title = models.CharField(max_length=200)
-    callno = LabelField(max_length=12, verbose_name="label", db_column="label")
+#    callno = LabelField(max_length=12, verbose_name="label", db_column="labelnum")
+    callno = LabelField(max_length=12, max_digits=10, decimal_places=2, verbose_name="label", db_column="labelnum")
     oldpagecount = models.IntegerField(blank=True, null=True, verbose_name="Page count", help_text="for solo cornet")
     duration = models.CharField(max_length=8, default="0:0", help_text="approx duration - MM:SS - leave as 0:0 when not known")
     composer = models.ForeignKey('Author', blank=True, null=True, related_name="compositions", on_delete=CASCADE)
@@ -187,7 +203,7 @@ class Entry(models.Model):
     objects = EntryManager()
 
     class Meta:
-        #unique_together = ('callno', 'category')
+        unique_together = ('callno', 'category')
         verbose_name_plural = "Entries"
         ordering = ['title','composer__surname']
         permissions = [
@@ -236,7 +252,11 @@ class EntryPurpose(models.Model):
     def __str__(self):
         return self.label
     
-
+class EntryMediaManager(models.Manager):
+    def get_queryset(self):
+        qs = super().get_queryset()
+        
+        return qs.select_related('purpose','visibility')
     
 class EntryMedia(models.Model):
     MTPDF = "PDF"
@@ -260,6 +280,7 @@ class EntryMedia(models.Model):
     pagecount = models.IntegerField(blank=True, null=True, verbose_name="Page count")
     asthumb = models.BooleanField(default=False, verbose_name='Use for Advert')
     comment = models.CharField(max_length=128, blank=True, null=True)
+    objects = EntryMediaManager()
     
 #    def clean(self):
 #        nthumbs = self.entry.related_media.filter(asthumb=True).count()
@@ -270,12 +291,19 @@ class EntryMedia(models.Model):
     class Meta:
         verbose_name = "Related file"
         verbose_name_plural = "Related files"
+        
+class PublicationManager(models.Manager):
+    def get_queryset(self):
+        qs = super().get_queryset()
+        
+        return qs.select_related('publisher')
     
 
 class Publication(models.Model):
     name = models.CharField(max_length=128)
     publisher = models.ForeignKey('Publisher', blank=True, null=True, related_name="publications", on_delete=CASCADE)
     comments = models.TextField(blank=True, null=True)
+    objects = PublicationManager()
 
     class Meta:
         unique_together = ('name', 'publisher')
@@ -286,11 +314,18 @@ class Publication(models.Model):
             return '%s (%s)' % (self.name, self.publisher.name)
         else:
             return '%s ()' % self.name
+        
+class PublisherManager(models.Manager):
+    def get_queryset(self):
+        qs = super().get_queryset()
+        
+        return qs.select_related('country')
 
 class Publisher(models.Model):
     name = models.CharField(max_length=128)
     country = models.ForeignKey('Country', blank=True, null=True, related_name="publishers", on_delete=CASCADE)
     comments = models.TextField(blank=True, null=True)
+    objects = PublisherManager()
 
     class Meta:
         unique_together = ('name', 'country')
@@ -349,6 +384,17 @@ class Author(models.Model):
     class Meta:
         unique_together = ('surname', 'given')
         ordering = ['surname', 'given']
+        
+    @classmethod
+    def find(cls, name):
+        # assume surname, firstname in list
+        if len(name) == 0:
+            return None
+        if len(name) >= 2 and name[1]:
+            author = cls.objects.filter(surname__iexact=name[0], given__iexact=name[1]).first()
+        else:
+            author = cls.objects.filter(surname__iexact=name[0]).first()
+        return author
 
     def __str__(self):
         if self.given:

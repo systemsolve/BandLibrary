@@ -29,7 +29,7 @@ from .models import Condition
 from .models import Completeness
 from .models import SeeAlso, EntryMedia, EntryPurpose, LibraryPersona, WebLink
 from .models import Tonality, Material, Ensemble
-from .models import Asset, AssetType, AssetCondition, AssetMaker, AssetModel
+from .models import Asset, AssetType, AssetCondition, AssetMaker, AssetModel, AssetMedia, AssetPurpose, AssetSubType, AssetStatus
 from .models import Task, TaskStatus, TaskItem, TaskNote
 from .models import Folder, FolderItem
 
@@ -348,14 +348,46 @@ class ProgramAdmin(admin.ModelAdmin):
     save_on_top = True
     inlines = [ ProgramItemAdmin ]
     
+class AssetMediaInlineFormSet(forms.BaseInlineFormSet):
+   def clean(self):
+      super().clean()
+      thumbcount = 0      
+      for form in self.forms:
+         if not form.is_valid():
+            return #other errors exist, so don't bother
+         if form.cleaned_data and not form.cleaned_data.get('DELETE') and form.cleaned_data['asthumb']:
+            thumbcount += 1
+      if thumbcount > 1:
+          raise forms.ValidationError("Only one advert allowed")
+          
+    
+class AssetMediaAdmin(admin.TabularInline):
+    model = AssetMedia
+    fields = ('mfile','mtype','purpose','comment','asthumbnail')
+    readonly_fields = ['asthumbnail']
+#    formset = AssetMediaInlineFormSet
+    extra = 1
+    
+    def asthumbnail(self, instance):
+        error_log("THUMBNAIL: %s" % (str(instance.id),))
+        if instance and instance.id:
+            return mark_safe('<img width="64" src="%s" alt="%s" />' % ("/library/athumb/" + str(instance.id), "BILL"))
+        else:
+            return "-"
+
+
+
+    asthumbnail.short_description = "Picture"
+    
 class AssetAdmin(admin.ModelAdmin, ExportCsvMixin):
-    list_display = ('asset_type', 'allocated', 'manufacturer', 'model', 'identifier')
-    search_fields = ['asset_type__label', 'model__label']
-    list_filter = ('allocated', 'asset_type','manufacturer')
+    list_display = ('asset_type', 'asset_subtype', 'asset_status', 'allocated', 'manufacturer', 'model', 'identifier')
+    search_fields = ['asset_type__label', 'asset_subtype__label', 'model__label']
+    list_filter = ('allocated', 'asset_type','asset_subtype', 'manufacturer')
     save_on_top = True
     #autocomplete_fields = ['realname']
     actions = ["export_as_csv"]
-    ordering = ('asset_type__label', 'manufacturer__label')
+    ordering = ('asset_type__label', 'asset_type__label', 'manufacturer__label')
+    inlines = [ AssetMediaAdmin ]
     formfield_overrides = {
         models.TextField: {'widget': Textarea(
               attrs={
@@ -605,6 +637,8 @@ admin.site.register(Tonality)
 admin.site.register(Material)
 admin.site.register(Asset, AssetAdmin)
 admin.site.register(AssetType)
+admin.site.register(AssetSubType)
+admin.site.register(AssetStatus)
 admin.site.register(AssetCondition)
 admin.site.register(AssetMaker)
 admin.site.register(AssetModel)
@@ -612,6 +646,7 @@ admin.site.register(Task, TaskAdmin)
 admin.site.register(TaskStatus)
 admin.site.register(LibraryPersona)
 admin.site.register(EntryPurpose)
+admin.site.register(AssetPurpose)
 #admin.site.register(SeeAlso, SeeAlsoAdmin)
 admin.site.register(Folder, FolderAdmin)
 

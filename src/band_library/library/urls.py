@@ -9,6 +9,7 @@ urlpatterns = [
     path('entry/<int:item>/', views.entry, name='entry'),
     path('incipit/<int:item>/', views.incipit, name='incipit'),
     path('chip/<int:item>/', views.chip, name='chip'),
+    path('athumb/<int:item>/', views.athumb, name='athumb'),
     path('pagefile/<name>/', views.pagefile, name='pagefile'),
     path('folder/<str:folderid>/', views.folderlist, name='folderlist'),
     path('store/', api.StoreListView.as_view(), name='store-list'),

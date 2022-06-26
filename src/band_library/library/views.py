@@ -14,9 +14,11 @@ from .models import Category
 from .models import Entry
 from .models import Genre
 from .models import Folder
+from .models import AssetMedia
 import os
 import subprocess
 import sys
+import mimetypes
 from .utilx import error_log, makeimage
 
 class EntryTable(tables.Table):
@@ -215,6 +217,24 @@ def chip(request, item):
         return makeimage(fname, res, "chip-")
     else:
         return None
+    
+@login_required
+def athumb(request, item, resv=64):
+    entry = AssetMedia.objects.filter(pk__exact=item).first()
+    if entry and entry.mfile:
+        fname = entry.mfile.name
+        fullpath = os.path.join(mediadir, fname)
+        ffc = open(fullpath, "rb")
+        response = FileResponse(ffc, content_type="image/jpeg", charset='C')
+        response['Cache-Control'] = "public"
+
+        modtime = os.path.getmtime(fullpath)
+        response['Last-Modified'] = datetime.datetime.utcfromtimestamp(modtime).strftime("%a, %d %b %y %H:%M:%S GMT")
+        return response
+#        res = '-r %d' % resv if resv else ''
+#        return makeimage(fname, res, "athumb-")
+    else:
+        return None
 
 @permission_required('library.change_entry', login_url='/')
 def pagefile(request, name):
@@ -222,7 +242,8 @@ def pagefile(request, name):
     error_log("pagefile %s" % fullpath)
 
     ffc = open(fullpath, "rb")
-    response = HttpResponse(ffc.read(), content_type="application/pdf")
+    content_type = mimetypes.guess_type(fullpath)
+    response = HttpResponse(ffc.read(), content_type=content_type[0])
     response['Cache-Control'] = "public"
 
     modtime = os.path.getmtime(fullpath)

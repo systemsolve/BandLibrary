@@ -32,12 +32,12 @@ class LabelField(models.DecimalField):
             return value
 #        vvv = decimal.Decimal(value.lstrip("0"))
         vvv = value
-        error_log("LABEL: FROM DB %s" % str(vvv))
+#        error_log("LABEL: FROM DB %s" % str(vvv))
         return vvv.normalize()
 
     def get_prep_value(self, value):
         value = super().get_prep_value(value)
-        error_log("LABEL: GET PREP %s" % str(value))
+#        error_log("LABEL: GET PREP %s" % str(value))
 #        value = "00000000000" + value
 #        return value[-self.max_length:]
         return value
@@ -46,7 +46,7 @@ class LabelField(models.DecimalField):
         value = super().to_python(value)
         #        vvv = decimal.Decimal(value.lstrip("0"))
         vvv = value
-        error_log("LABEL: TO PYTHON %s" % str(vvv))
+#        error_log("LABEL: TO PYTHON %s" % str(vvv))
         return vvv.normalize()
 
 class Source(models.Model):
@@ -292,6 +292,8 @@ class EntryMedia(models.Model):
         verbose_name = "Related file"
         verbose_name_plural = "Related files"
         
+
+        
 class PublicationManager(models.Manager):
     def get_queryset(self):
         qs = super().get_queryset()
@@ -488,6 +490,20 @@ class AssetType(models.Model):
 
     def __str__(self):
         return '%s' % (self.label)
+    
+class AssetSubType(models.Model):
+    label = models.CharField(max_length=128)
+    comments = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return '%s' % (self.label)
+    
+class AssetStatus(models.Model):
+    label = models.CharField(max_length=128)
+    comments = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return '%s' % (self.label)
 
 class AssetCondition(models.Model):
     label = models.CharField(max_length=128)
@@ -509,11 +525,19 @@ class AssetModel(models.Model):
 
     def __str__(self):
         return '%s' % (self.label)
+    
+class AssetPurpose(models.Model):
+    label = models.CharField(max_length=128, unique=True)
+    
+    def __str__(self):
+        return self.label
 
 class Asset(models.Model):
     asset_type = models.ForeignKey(AssetType, related_name='assets', on_delete=CASCADE)
+    asset_subtype = models.ForeignKey(AssetSubType, related_name='assets', blank=True, null=True, on_delete=CASCADE)
     year_of_acquisition = models.IntegerField(blank=True, null=True)
     asset_condition = models.ForeignKey(AssetCondition, related_name='assets', on_delete=CASCADE)
+    asset_status = models.ForeignKey(AssetStatus, related_name='assets', blank=True, null=True, on_delete=CASCADE)
     allocated = models.BooleanField(verbose_name="Allocated/In Use", default=False)
     identifier = models.CharField(max_length=256, help_text="Serial no or other unique")
     description = models.TextField(blank=True, null=True)
@@ -522,9 +546,47 @@ class Asset(models.Model):
     location = models.TextField(blank=True, null=True, help_text="Name/address of borrower or place")
     owner = models.CharField(max_length=256, blank=True, null=True, help_text="Actual owner if not Oakleigh Brass")
     last_maintained = models.DateField(blank=True, null=True)
+    comments = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return '%s - %s: %s' % (self.asset_type, self.manufacturer, self.model)
+        return '%s/%s - %s: %s' % (self.asset_type, self.asset_subtype, self.manufacturer, self.model)
+    
+class AssetMediaManager(models.Manager):
+    def get_queryset(self):
+        qs = super().get_queryset()
+        
+        return qs.select_related('purpose')
+        
+class AssetMedia(models.Model):
+    MTPDF = "PDF"
+    MTIMAGE = "IMAGE"
+    MTVIDEO = "VIDEO"
+    MTAUDIO = "AUDIO"
+    MTOTHER = "OTHER"
+    MEDIATYPES = (
+        (MTPDF, "PDF"),
+        (MTIMAGE, "Image"),
+        (MTVIDEO, "Video"),
+        (MTAUDIO, "Audio"),
+        (MTOTHER, "Other/Unknown")
+    )
+    
+    asset = models.ForeignKey(Asset, related_name='related_media', on_delete=CASCADE)
+    mfile = models.FileField(upload_to='', max_length=256, verbose_name='Filename')
+    mtype = models.CharField(max_length=8, choices=MEDIATYPES, default="OTHER", verbose_name="Media Type")
+    purpose = models.ForeignKey(AssetPurpose, on_delete=PROTECT)
+    comment = models.CharField(max_length=128, blank=True, null=True)
+    objects = AssetMediaManager()
+    
+#    def clean(self):
+#        nthumbs = self.entry.related_media.filter(asthumb=True).count()
+#        if False and nthumbs > 1:
+#            raise ValidationError('Only one media item can be for an - %d found' % (nthumbs,))
+#        return
+    
+    class Meta:
+        verbose_name = "Supporting media"
+        verbose_name_plural = "Supporting media"
     
 class TaskStatus(models.Model):
     description = models.CharField(max_length=64)

@@ -4,6 +4,7 @@ from . import views, api
 
 urlpatterns = [
     path('', views.index, name='index'),
+    path('uploader/', views.upload_template, name='uploader'),
     path('entrydata/', views.index_json, name='entrydata'),
     path('entrylist/', views.entrylist, name='entrylist'),
     path('entry/<int:item>/', views.entry, name='entry'),

@@ -160,7 +160,8 @@ class EntryAdmin(admin.ModelAdmin, ExportCsvMixin):
     """
     
     def callno_format(self, instance):
-        return "%.8g" % instance.callno
+        return str(instance.callno)
+        # return "%.8g" % instance.callno
     
     callno_format.admin_order_field = 'callno'
     callno_format.short_description = 'Label'
@@ -223,14 +224,19 @@ class EntryAdmin(admin.ModelAdmin, ExportCsvMixin):
                     self.message_user(request,"Entry ENSEMBLE: %s HIT" % str(prow[4]), messages.DEBUG)
                     ensemble = enscache[prow[4].lower()]
                     
-                force = len(prow) >= 9 and prow[8]
-                
-                
+                force = len(prow) >= 9 and prow[8]                
                 
                 title = ' '.join(prow[2].split())
                 title = ', '.join(title.split(','))
                 label_str = ' '.join(prow[3].split())
                 label = decimal.Decimal(label_str)
+                
+                if not label:
+                    self.message_user(request,"Entry: blank label? %s" % str(prow[3]), messages.DEBUG)
+                    errors += 1
+                    continue
+                else:
+                    self.message_user(request,"Entry: new label? %s -> %s" % (str(prow[3]), str(label)), messages.DEBUG)
                 
                 previous = Entry.objects.filter(category=category, callno=label).first()
                 
@@ -268,7 +274,7 @@ class EntryAdmin(admin.ModelAdmin, ExportCsvMixin):
                 else:
                     self.message_user(request, "Replace Entry: %s" % str(previous))
                     previous.category = category
-                    previous.callno=prow[3]
+                    previous.callno=label
                     previous.title=title
                     previous.ensemble=ensemble
                     previous.duration=duration
@@ -279,7 +285,8 @@ class EntryAdmin(admin.ModelAdmin, ExportCsvMixin):
                 
             if errors == 0:
                 for eee in entrylist:
-                    eee.save()
+                    pass
+                    # eee.save()
                     
                 self.message_user(request, "Your csv file has been imported")
             else:

@@ -23,6 +23,7 @@ User.add_to_class("__str__", get_full_name)
 # the issue is that 1234.1 is not the same as 1234.10
 # perhaps the way is to make 1234.1 into 1234.01
 
+
 class LabelField(models.DecimalField):
     decimal_digits = 2
     max_digits = 8
@@ -32,10 +33,15 @@ class LabelField(models.DecimalField):
             return value
 #        vvv = decimal.Decimal(value.lstrip("0"))
         vvv = value
-#        error_log("LABEL: FROM DB %s" % str(vvv))
-        return vvv.normalize()
+        
+        # this strange construct is to stop numbers like 1500 from appearing as 1.5E3
+        # it's in the Python documentation!
+        vvvx = vvv.quantize(decimal.Decimal(1)) if vvv == vvv.to_integral() else vvv.normalize()
+        # error_log("LABEL: FROM DB %s -> %s" % (str(vvv), str(vvvx)))
+        return vvvx
+        #return vvv.normalize()
 
-    def get_prep_value(self, value):
+    def xxx_get_prep_value(self, value):
         value = super().get_prep_value(value)
 #        error_log("LABEL: GET PREP %s" % str(value))
 #        value = "00000000000" + value
@@ -48,7 +54,7 @@ class LabelField(models.DecimalField):
         vvv = value
 #        error_log("LABEL: TO PYTHON %s" % str(vvv))
         return vvv.normalize()
-
+        
 class Source(models.Model):
     label = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
@@ -504,6 +510,10 @@ class AssetStatus(models.Model):
 
     def __str__(self):
         return '%s' % (self.label)
+    
+    class Meta:
+        verbose_name_plural = "Asset statuses"
+        
 
 class AssetCondition(models.Model):
     label = models.CharField(max_length=128)

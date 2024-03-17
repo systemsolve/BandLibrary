@@ -9,7 +9,8 @@
     </style>
 {% endblock %}
 {% block content %}
-    <p># ID, Cat, Title, Label, Ensemble, Duration, Composer, Arranger, Force</p>
+    <p># ID (optional), Category (code), Title, Label, Ensemble, Duration, Composer, Arranger, Force update</p>
+    <a href="{% url 'uploader' %}">Template CSV File</a>
     <p>names in single cell: surname, given</p>
     <div>
         <form action="." method="POST" enctype="multipart/form-data">

@@ -303,3 +303,14 @@ def folderlist(request, folderid):
     folder = Folder.objects.filter(pk__exact=folderid).first()
     return render(request, 'library/folderlist.twig', {'devsys': settings.DEVSYS, 'folder': folder})
 
+@login_required
+def upload_template(request):
+    import csv
+    # ID (optional), Category (code), Title, Label, Ensemble, Duration, Composer, Arranger, Force update
+    field_names = ['Optional ID',"Category Code","Title","Label","Ensemble","Duration (0:0 if none)", "Composer", "Arranger","Force update (Y)"]
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=libtemplate.csv'
+    writer = csv.writer(response)
+    writer.writerow(field_names)
+    return response

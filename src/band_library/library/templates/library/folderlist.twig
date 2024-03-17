@@ -1,13 +1,21 @@
-{% extends "library/base.twig" %}
+{% extends "library/baseprint.twig" %}
 {% load band_tags %}
 {% load static %}
 {% block styles %}
     <style type="text/css">
+        table.indexcols tbody {
+            vertical-align: top;
+        }
         table.folder {
             width: 100%;
         }
         .folder td {
             border: 1px solid black;
+        }
+
+        td.folder {
+            width: 45%;
+            padding-right: 2em;
         }
         div.column {
             display: inline-block;
@@ -21,55 +29,122 @@
         table.folder td, table.folder th {
             font-size: 16pt;
         }
+        
+        body {
+            margin-left: 16px;
+        }
+        
+        @media print {
+            body {
+                margin-left: 0;
+            }
+            body, div.column {
+                transform: scale(0.9);
+            }
+            .devsys, #nav {
+                display: none;
+            }
+            table.heading td {
+                /* transform: scale(0.8); */
+            }
+            table.folder td, table.folder th {
+                font-size: 14pt;
+            }
+            h1 {
+                font-size: 3rem;  
+            } 
+            div.breakpage {
+                break-after: page;
+            }
+            
+        }
+        
+
     </style>
 {% endblock %}
 {% block title %}
     <title>Folder: {{folder.label}}</title>
 {% endblock %}
 {% block main %}
-    <h1><img src="{% static 'apple-touch-icon.png' %}">{{ folder.label }}: {{ folder.issue_date}} Numeric List</h1>
-    <div class="column left">
-    <table class="folder">
-        <tr>
-            <th>Page</th><th>Title</th><th>Version</th>
-        </tr>
-        {% for pos, slot in folder.numeric.items %}
+    <div class='row' id='nav'>
+        <h3 class='col-md-4'><a href='/'>HOME</a></h3>
+    </div>
+    <table class="heading">
+        <tbody>
             <tr>
-                {# <td>{{ pos }}</td><td>{% if slot %}{{ slot }}{% else %}EMPTY{% endif %}</td> #}
-               
-                {% if slot %}
-                <td>{{ slot.position }}</td>
-                <td>{{ slot.item|totitle }}</td>
-                <td>{{ slot.version }}</td>
-                {% else %}
-                <td>{{ pos }}</td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
-                {% endif %}
-                
+                <td><img src="{% static 'apple-touch-icon.png' %}"></td>
+                <td><h1>{{ folder.label }}</h1></td>
             </tr>
-        {% endfor %}
-    </table>
-    </div>
-    <div class="column right">
-        {{ folder.sidebar|safe }}
-    </div>
-    <h1 style="page-break-before: always"><img src="{% static 'apple-touch-icon.png' %}">{{ folder.label }}: {{ folder.issue_date}} Alphabetical List</h1>
-    <div class="column left">
-    <table class="folder">
-        <tr>
-            <th>Title</th><th>Page</th><th>Version</th>
-        </tr>
-        {% for slot in folder.alphabetic %}
             <tr>
-                <td>{{ slot.item|totitle }}</td>
-                <td>{{ slot.position }}</td>
-                <td>{{ slot.version }}</td>
+                <td colspan="2"><h2>Numeric List ({{ folder.issue_date}})</h2></td>
             </tr>
-        {% endfor %}
+        </tbody>
     </table>
-        </div>
-    <div class="column right">
+
+{#    <div class="column left">#}
+<table class="indexcols">
+    <tr>
+        <td class="folder">
+            <table class="folder">
+                <tr>
+                    <th>Page</th><th>Title</th>
+                </tr>
+                {% for pos, slot in folder.numeric.items %}
+                    <tr>
+                        {# <td>{{ pos }}</td><td>{% if slot %}{{ slot }}{% else %}EMPTY{% endif %}</td> #}
+
+                        {% if slot %}
+                        <td>{{ slot.position }}</td>
+                        <td>{{ slot.item|totitle }}</td>
+                        {#<td>{{ slot.version }}</td>#}
+                        {% elif false %}
+                        <td>{{ pos }}</td>
+                        <td>&nbsp;</td>
+                        {#<td>&nbsp;</td>#}
+                        {% endif %}
+
+                    </tr>
+                {% endfor %}
+            </table>
+        </td>
+        <td>
+{#    </div>#}
+{#    <div class="column right">#}
         {{ folder.sidebar|safe }}
-    </div>
+{#    </div>#}
+        </td>
+</tr>
+</table>
+<div class='breakpage'></div>
+<table class="heading">
+    <tbody>
+        <tr>
+            <td><img src="{% static 'apple-touch-icon.png' %}"></td>
+            <td><h1>{{ folder.label }}</h1></td>
+            <tr>
+            <td colspan="2"><h2>Alphabetic List ({{ folder.issue_date}})</h2></td>
+        </tr>
+    </tbody>
+</table>
+<table class="indexcols">
+    <tr>
+        <td class="folder">
+            <table class="folder">
+                <tr>
+                    <th>Title</th><th>Page</th>
+                </tr>
+                {% for slot in folder.alphabetic %}
+                    <tr>
+                        <td>{{ slot.item|totitle }}</td>
+                        <td>{{ slot.position }}</td>
+                        {#<td>{{ slot.version }}</td>#}
+                    </tr>
+                {% endfor %}
+            </table>
+        </td>
+        <td>
+        {{ folder.sidebar|safe }}
+        </td>
+    </tr>
+</table>
 {% endblock %}

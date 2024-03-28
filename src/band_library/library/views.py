@@ -1,14 +1,14 @@
 import datetime
 from django.conf import settings
-from django.db.models import Q, IntegerField
+from django.db.models import Q
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth import authenticate, login, logout
-from django.db.models.functions import Cast
+# from django.db.models.functions import Cast
 from django.http import HttpResponse, FileResponse, JsonResponse
 from django.shortcuts import render, redirect
 from django.utils.safestring import mark_safe
 import django_tables2 as tables
-from django_tables2 import RequestConfig
+# from django_tables2 import RequestConfig
 from django_tables2.utils import A
 from .models import Category
 from .models import Entry
@@ -16,10 +16,11 @@ from .models import Genre
 from .models import Folder
 from .models import AssetMedia
 import os
-import subprocess
-import sys
+# import subprocess
+# import sys
 import mimetypes
 from .utilx import error_log, makeimage
+
 
 class EntryTable(tables.Table):
     title = tables.LinkColumn('entry', args=[A('pk')])
@@ -40,11 +41,12 @@ class EntryTable(tables.Table):
             'id': 'entrytable',
             'style': 'width: 100%'
         }
-        exclude = ('id', 'comments','media')
-        fields = ('title','genre','composer','arranger')
+        exclude = ('id', 'comments', 'media')
+        fields = ('title', 'genre', 'composer', 'arranger')
         orderable = False
         empty_text = '-'
         # sequence = ('title', 'category', 'genre', 'callno', 'composer', 'arranger', 'instrument', 'media')
+
 
 def is_number(zz):
     try:
@@ -52,6 +54,7 @@ def is_number(zz):
         return True
     except ValueError:
         return False
+
 
 @login_required
 def entry(request, item):
@@ -66,18 +69,15 @@ def entry(request, item):
         categories = None
     else:
         entry = Entry.objects.filter(id__exact=item).first()
-        categories = Category.objects.all();
+        categories = Category.objects.all()
 
     return render(request, 'library/entry.twig', {
-        'devsys': settings.DEVSYS, 
-        'entry': entry, 
-        'categories': categories, 
-        'genres': Genre.objects.all(), 
-        "can_edit": request.user.is_authenticated and request.user.is_staff, 
+        'devsys': settings.DEVSYS,
+        'entry': entry,
+        'categories': categories,
+        'genres': Genre.objects.all(),
+        "can_edit": request.user.is_authenticated and request.user.is_staff,
         "limited": limited})
-
-
-
 
 
 def indexdata(request):
@@ -95,7 +95,7 @@ def indexdata(request):
         limitcat = 'M'
 
     if limited:
-        fff = Q(category__code__exact=limitcat)&Q(completeness__usable=True)
+        fff = Q(category__code__exact=limitcat) & Q(completeness__usable=True)
     else:
         if not request.GET.get('incomplete', False):
             error_log("EXCLUDE INCOMPLETE")
@@ -107,7 +107,13 @@ def indexdata(request):
         if 'words' in request.GET:
             www = request.GET['words'].strip()
             if www:
-                wfilter = (Q(title__icontains=www) | Q(composer__given__icontains=www) | Q(composer__surname__icontains=www)| Q(arranger__given__icontains=www) | Q(arranger__surname__icontains=www))
+                wfilter = (
+                    Q(title__icontains=www) |
+                    Q(composer__given__icontains=www) |
+                    Q(composer__surname__icontains=www)|
+                    Q(arranger__given__icontains=www) |
+                    Q(arranger__surname__icontains=www)
+                )
                 fff = fff & wfilter
                 thewords = www
 
@@ -124,10 +130,9 @@ def indexdata(request):
                 cfilter = (Q(genre__exact=www))
                 fff = fff & cfilter
                 thegenre = int(www)
-                
-    
 
     return fff, incomplete, thewords, thegenre, thecat, limited
+
 
 @login_required
 def index(request):
@@ -140,10 +145,10 @@ def index(request):
     else:
         table = EntryTable(entries.all())
     if not request.user.is_staff:
-        table.exclude = ('id', 'comments', 'callno', 'added', 'duration','incomplete')
+        table.exclude = ('id', 'comments', 'callno', 'added', 'duration', 'incomplete')
     # RequestConfig(request, paginate={'per_page': 50}).configure(table)
     return render(request, 'library/biglist.twig', {
-        'devsys': settings.DEVSYS, 
+        'devsys': settings.DEVSYS,
         'entries': table,
         'categories': Category.objects.all(),
         'genres': Genre.objects.all(),
@@ -165,25 +170,43 @@ def index_json(request):
         theentries = entries.all()
 
     if not request.user.is_staff:
-        columns = ('id', 'title','genre__label','composer__surname','arranger__surname')
-        theentries = list(theentries.select_related('composer','arranger').values(*columns))
+        columns = (
+            'id',
+            'title',
+            'genre__label',
+            'composer__surname',
+            'arranger__surname'
+        )
+        theentries = list(theentries.select_related('composer', 'arranger').values(*columns))
     else:
-        columns = ('id','title','category__label','callno','genre__label','composer__surname','arranger__surname')
-        theentries = list(theentries.select_related('composer','arranger').values(*columns))
+        columns = (
+            'id',
+            'title',
+            'category__label',
+            'callno',
+            'genre__label',
+            'composer__surname',
+            'arranger__surname'
+        )
+        theentries = list(theentries.select_related('composer', 'arranger').values(*columns))
     # RequestConfig(request, paginate={'per_page': 50}).configure(table)
     return JsonResponse({'data': theentries, 'columns': columns})
+
 
 @login_required
 def entrylist(request):
     # fff is a Q object and won't be instantiated
     fff, incomplete, thewords, thegenre, thecat, limited = indexdata(request)
     if not request.user.is_staff:
-        columns = (('id','ID'), ('title','Title'),('genre__label','Genre'),('composer__surname','Composer'),('arranger__surname', 'Arranger'))
+        columns = (('id', 'ID'), ('title', 'Title'),
+                   ('genre__label', 'Genre'), ('composer__surname', 'Composer'), ('arranger__surname', 'Arranger'))
     else:
-        columns = (('id','ID'), ('title','Title'), ('category__label', 'Location'), ('callno', 'Label'),('genre__label','Genre'),('composer__surname','Composer'),('arranger__surname', 'Arranger'))
-        
+        columns = (('id', 'ID'),
+                   ('title', 'Title'), ('category__label', 'Location'), ('callno', 'Label'), ('genre__label', 'Genre'),
+                   ('composer__surname', 'Composer'), ('arranger__surname', 'Arranger'))
+
     return render(request, 'library/entrylist.twig', {
-        'devsys': settings.DEVSYS, 
+        'devsys': settings.DEVSYS,
         'columns': columns,
         'categories': Category.objects.all(),
         'genres': Genre.objects.all(),
@@ -194,9 +217,10 @@ def entrylist(request):
         'incomplete': incomplete
     })
 
-#basedir = '/Users/david/src/BandLibrary'
-#mediadir = os.path.join(basedir, 'media')
-#cachedir = os.path.join(basedir, 'mediacache')
+
+# basedir = '/Users/david/src/BandLibrary'
+# mediadir = os.path.join(basedir, 'media')
+# cachedir = os.path.join(basedir, 'mediacache')
 mediadir = settings.BL_MEDIADIR
 
 
@@ -206,6 +230,7 @@ def incipit(request, item):
     fname = entry.media.name
     res = ''
     return makeimage(fname, res, "")
+
 
 @login_required
 def chip(request, item):
@@ -217,7 +242,8 @@ def chip(request, item):
         return makeimage(fname, res, "chip-")
     else:
         return None
-    
+
+
 @login_required
 def athumb(request, item, resv=64):
     entry = AssetMedia.objects.filter(pk__exact=item).first()
@@ -236,6 +262,7 @@ def athumb(request, item, resv=64):
     else:
         return None
 
+
 @permission_required('library.change_entry', login_url='/')
 def pagefile(request, name):
     fullpath = os.path.join(mediadir, name)
@@ -249,8 +276,6 @@ def pagefile(request, name):
     modtime = os.path.getmtime(fullpath)
     response['Last-Modified'] = datetime.datetime.utcfromtimestamp(modtime).strftime("%a, %d %b %y %H:%M:%S GMT")
     return response
-
-
 
 
 def top(request):
@@ -267,7 +292,7 @@ def top(request):
         if user is not None:
             login(request, user)
         else:
-        # Return an 'invalid login' error message.
+            # Return an 'invalid login' error message.
 
             return render(request, 'library/login.twig')
     if request.method == 'POST':
@@ -287,27 +312,40 @@ def top(request):
     folders = Folder.objects.all()
 
     return render(request, 'library/home.twig', {
-        'devsys': settings.DEVSYS, 
+        'devsys': settings.DEVSYS,
         'categories': categories,
         'genres': genres,
         'folders': folders,
         'limited': limited
-        })
+    })
+
 
 def logout_view(request):
     logout(request)
     return redirect('/')
+
 
 def folderlist(request, folderid):
     # TODO: speed up query - use prefetch_related to pull "slots" and "slots__entry"
     folder = Folder.objects.filter(pk__exact=folderid).first()
     return render(request, 'library/folderlist.twig', {'devsys': settings.DEVSYS, 'folder': folder})
 
+
 @login_required
 def upload_template(request):
     import csv
     # ID (optional), Category (code), Title, Label, Ensemble, Duration, Composer, Arranger, Force update
-    field_names = ['Optional ID',"Category Code","Title","Label","Ensemble","Duration (0:0 if none)", "Composer", "Arranger","Force update (Y)"]
+    field_names = [
+        'Optional ID',
+        "Category Code",
+        "Title",
+        "Label",
+        "Ensemble",
+        "Duration (0:0 if none)",
+        "Composer",
+        "Arranger",
+        "Force update (Y)"
+    ]
 
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename=libtemplate.csv'

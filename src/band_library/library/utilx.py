@@ -8,17 +8,20 @@ from django.conf import settings
 cachedir = settings.BL_CACHEDIR
 mediadir = settings.BL_MEDIADIR
 
+
 def error_log(msg):
     print(msg, file=sys.stderr)
-    
+
+
 def makeimage(fname, res, prefix):
     target = prefix + fname
     try:
-#        error_log("open %s" % os.path.join(cachedir, target + ".jpg"))
+        #        error_log("open %s" % os.path.join(cachedir, target + ".jpg"))
         ffc = open(os.path.join(cachedir, target + ".jpg"), "rb")
-    except:
+    except Exception:
         error_log("convert %s" % os.path.join(mediadir, fname))
-        command = "pdftoppm -singlefile %s -jpeg \"%s\" \"%s\"" % (res, os.path.join(mediadir, fname), os.path.join(cachedir, target))
+        command = "pdftoppm -singlefile %s -jpeg \"%s\" \"%s\"" % (res, os.path.join(mediadir, fname),
+                                                                   os.path.join(cachedir, target))
         error_log("command %s" % command)
         subprocess.call(command, shell=True)
         ffc = open(os.path.join(cachedir, target + ".jpg"), "rb")
@@ -30,12 +33,13 @@ def makeimage(fname, res, prefix):
     response['Last-Modified'] = datetime.datetime.utcfromtimestamp(modtime).strftime("%a, %d %b %y %H:%M:%S GMT")
     return response
 
+
 def makeimage2(fname, res, prefix):
     target = prefix + fname
     try:
-#        error_log("open %s" % os.path.join(cachedir, target + ".jpg"))
+        #        error_log("open %s" % os.path.join(cachedir, target + ".jpg"))
         ffc = open(os.path.join(cachedir, target + ".jpg"), "rb")
-    except:
+    except Exception:
         error_log("convert %s" % os.path.join(mediadir, fname))
         command = "convert %s -jpeg \"%s\" \"%s\"" % (res, os.path.join(mediadir, fname), os.path.join(cachedir, target))
         error_log("command %s" % command)

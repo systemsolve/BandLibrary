@@ -686,7 +686,10 @@ class Folder(models.Model):
     @property
     def alphabetic(self):
 #        return self.slots.order_by('entry__label')
-        return self.byname
+        sortlist = sorted(self.byname, key=lambda x:x.item())
+        # error_log("INPUT: %s" % str(self.byname))
+        # error_log("OUTPUT: %s" % str(sortlist))
+        return sortlist
     
     @property
     def numeric(self):

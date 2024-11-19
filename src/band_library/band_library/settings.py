@@ -27,13 +27,13 @@ DEVSYS = False
 DEBUG = True
 CSV_DEBUG = DEBUG and DEVSYS
 
-ALLOWED_HOSTS = ['library.oakleighband.org.au','devlibrary.oakleighband.org.au', 'azlibrary.oakleighband.org.au']
+ALLOWED_HOSTS = ['library.oakleighband.org.au', 'devlibrary.oakleighband.org.au', 'azlibrary.oakleighband.org.au']
 
 INTERNAL_IPS = [
-    '165.225.227.53','20.70.138.164'
+    '165.225.227.53', '20.70.138.164'
 ]
 
-
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 # Application definition
 
 INSTALLED_APPS = [
@@ -47,7 +47,8 @@ INSTALLED_APPS = [
     'django_tables2',
     'library',
     'imagekit',
-    'rest_framework'
+    'rest_framework',
+    'formtools'
 ]
 
 MIDDLEWARE = [
@@ -56,7 +57,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    #'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
+    # 'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]

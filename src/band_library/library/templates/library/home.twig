@@ -49,7 +49,9 @@
         <h2>No music folder lists yet</h2>
     {% endfor %}
     {% if user.is_staff %}
-    <p><a href='/admin/'>Admin: authorised users only</a></p>
+        <p><a href="/library/checkout/">Check Out Instrument</a></p>
+        <p><a href="/library/checkin/">Check In Instrument</a></p>
+        <p><a href='/admin/'>Admin: authorised users only</a></p>
     {% endif %}
     <hr>
     <a href='/logout'>Log out</a>

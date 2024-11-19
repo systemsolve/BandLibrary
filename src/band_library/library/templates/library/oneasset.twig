@@ -1,0 +1,38 @@
+{% extends "library/base.twig" %}
+{% load band_tags %}
+{% block title %}
+    <title>Asset: {{ asset }}</title>
+{% endblock %}
+{% block main %}
+    <a href="/">HOME</a>
+    <h2>{{ asset.name }}</h2>
+    {% if can_edit %}
+        <a href="/admin/library/asset/{{asset.id}}/change">Edit this asset</a>
+    {% endif %}
+    <div class="table-container">
+        <table class="table table-condensed">
+            <tbody>
+                <tr>
+                    <td>Asset:</td>
+                    <td>{{ asset.asset_type }} - {{ asset.manufacturer }} {{ asset.model }}</td>
+                </tr>
+                
+                <tr>
+                    <td>Status:</td>
+                    <td>{{ asset.asset_status }}</td>
+                </tr>
+                <tr>
+                    <td>Location:</td>
+                    <td>{{ asset.location|linebreaks }}</td>
+                </tr>
+                
+                {% if asset.comments %}
+                    <tr>
+                        <td>Comments:</td>
+                        <td>{{ asset.comments|linebreaks }}</td>
+                    </tr>
+                {% endif %}             
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

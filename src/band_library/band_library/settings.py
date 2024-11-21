@@ -23,17 +23,21 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'qoah5oay3-z8nqdwvi5%o9szr1pyir$_5cdqbg4a@mgj$k99ix'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEVSYS = False
-DEBUG = True
+try:
+    from .devmarker import DEVSYS, DEBUG
+except ImportError:
+    DEVSYS = False
+    DEBUG = False
+
 CSV_DEBUG = DEBUG and DEVSYS
 
-ALLOWED_HOSTS = ['library.oakleighband.org.au','devlibrary.oakleighband.org.au', 'azlibrary.oakleighband.org.au']
+ALLOWED_HOSTS = ['library.oakleighband.org.au', 'devlibrary.oakleighband.org.au', 'azlibrary.oakleighband.org.au']
 
 INTERNAL_IPS = [
-    '165.225.227.53','20.70.138.164'
+    '165.225.227.53', '20.70.138.164'
 ]
 
-
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 # Application definition
 
 INSTALLED_APPS = [

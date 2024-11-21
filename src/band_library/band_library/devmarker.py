@@ -1,0 +1,2 @@
+DEVSYS = True
+DEBUG = True

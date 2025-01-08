@@ -21,19 +21,20 @@ def makethumb(value):
     iii = Incipit(source=fff)    
     return iii.generate()
 
-EXCLUSIONS = ('the', 'a', 'an', 'by', 'with', 'from', 'of', 'to', 'and')
+EXCLUSIONS = ('the', 'a', 'an', 'by', 'with', 'from', 'of', 'to', 'and', 'in')
 
 @register.filter(name='totitle')
 def titlecase(s):
     # remove trailing stuff after ' - ' (non greedy)
-    tricky1re = re.compile(r'(.*), (a|the)(.*)', flags=re.I) # separate article
+    tricky1re = re.compile(r'(.*), (\ba\b|\bthe\b)(.*)', flags=re.I) # separate article
     tricky2re = re.compile(r'(.*?) - .*', flags=re.I) # comment in title
     s0 = tricky1re.sub(r"\2 \1\3", s)
     s1 = tricky2re.sub(r"\1", s0)
     s2 = re.sub(
         r"[A-Za-z]+('[A-Za-z]+)?",
-        lambda word: word.group(0) if word.group().lower() in EXCLUSIONS else word.group(0).capitalize(),
+        lambda word: word.group(0).lower() if word.group().lower() in EXCLUSIONS else word.group(0).capitalize(),
         s1)
+    # return s2
     return s2[0].upper() + s2[1:]
 
 def xxmaketitle(value):

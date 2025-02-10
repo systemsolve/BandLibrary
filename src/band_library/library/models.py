@@ -554,12 +554,21 @@ class Asset(models.Model):
     manufacturer = models.ForeignKey(AssetMaker, related_name='assets', on_delete=CASCADE)
     model = models.ForeignKey(AssetModel, related_name='assets', blank=True, null=True, on_delete=CASCADE)
     location = models.TextField(blank=True, null=True, help_text="Name/address of borrower or place")
+    storage = models.TextField(blank=True, null=True, help_text="Location in storeroom")
     owner = models.CharField(max_length=256, blank=True, null=True, help_text="Actual owner if not Oakleigh Brass")
     last_maintained = models.DateField(blank=True, null=True)
     comments = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return '%s/%s - %s: %s' % (self.asset_type, self.asset_subtype, self.manufacturer, self.model)
+        
+    @property
+    def media(self):
+        item = self.related_media.all().first()
+        if item:
+            return item.mfile
+        else:
+            return None
     
 class AssetMediaManager(models.Manager):
     def get_queryset(self):

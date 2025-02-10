@@ -30,14 +30,14 @@ $(document).ready(function(){
         <form class="form-inline" action=''>
             Keywords: <input class="form-control" type="text" name="words" value="{{thewords}}">
             Ensemble:
-            <select class="form-control" name="genre">
+            <select class="form-control" name="ensemble">
                 <option value="">All</option>
                 {% for opt in ensembles %}
                     {# must have the same integer type #}
                     {% if theensemble == opt.id %}
-                        <option selected value="{{opt.id}}">{{opt.label}}</option>
+                        <option selected value="{{opt.id}}">{{opt.name}}</option>
                     {% else %}
-                        <option value="{{opt.id}}">{{opt.label}}</option>
+                        <option value="{{opt.id}}">{{opt.name}}</option>
                     {% endif %}
                 {% endfor %}
             </select>

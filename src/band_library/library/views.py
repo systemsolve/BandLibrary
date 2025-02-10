@@ -86,6 +86,7 @@ def indexdata(request):
     thewords = ""
     thecat = ""
     thegenre = ""
+    theensemble = ""
 
     limited = False
     limitcat = None
@@ -138,6 +139,7 @@ def indexdata(request):
                 cfilter = (Q(ensemble__exact=www))
                 fff = fff & cfilter
                 theensemble = int(www)
+    # error_log("FILTER: %s" % str(fff))
 
     return fff, incomplete, thewords, thegenre, thecat, limited, theensemble
 
@@ -148,10 +150,15 @@ def index(request):
         return redirect('/')
     entries = Entry.objects
     fff, incomplete, thewords, thegenre, thecat, limited, theensemble = indexdata(request)
+    
     if fff:
-        table = EntryTable(entries.filter(fff))
+        equery = entries.filter(fff)
     else:
-        table = EntryTable(entries.all())
+        equery = entries.all()
+        
+    error_log("E QUERY: %s" % equery.query)
+    
+    table = EntryTable(equery)
     if not request.user.is_staff:
         table.exclude = ('id', 'comments', 'callno', 'added', 'duration', 'incomplete')
     # RequestConfig(request, paginate={'per_page': 50}).configure(table)
@@ -173,17 +180,20 @@ def index(request):
 @login_required
 def index_json(request):
     entries = Entry.objects
-    fff, incomplete, thewords, thegenre, thecat, limited = indexdata(request)
+    fff, incomplete, thewords, thegenre, thecat, limited, theensemble = indexdata(request)
     if fff:
         theentries = entries.filter(fff)
     else:
         theentries = entries.all()
+        
+    error_log("IJSON: %s" % theentries.query)
 
     if not request.user.is_staff:
         columns = (
             'id',
             'title',
             'genre__label',
+            'ensemble__name',
             'composer__surname',
             'arranger__surname'
         )
@@ -195,6 +205,7 @@ def index_json(request):
             'category__label',
             'callno',
             'genre__label',
+            'ensemble__name',
             'composer__surname',
             'arranger__surname'
         )
@@ -206,13 +217,13 @@ def index_json(request):
 @login_required
 def entrylist(request):
     # fff is a Q object and won't be instantiated
-    fff, incomplete, thewords, thegenre, thecat, limited = indexdata(request)
+    fff, incomplete, thewords, thegenre, thecat, limited, theensemble = indexdata(request)
     if not request.user.is_staff:
         columns = (('id', 'ID'), ('title', 'Title'),
-                   ('genre__label', 'Genre'), ('composer__surname', 'Composer'), ('arranger__surname', 'Arranger'))
+                   ('genre__label', 'Genre'), ('ensemble__name', 'Ensemble'), ('composer__surname', 'Composer'), ('arranger__surname', 'Arranger'))
     else:
         columns = (('id', 'ID'),
-                   ('title', 'Title'), ('category__label', 'Location'), ('callno', 'Label'), ('genre__label', 'Genre'),
+                   ('title', 'Title'), ('category__label', 'Location'), ('callno', 'Label'), ('genre__label', 'Genre'), ('ensemble__name', 'Ensemble'),
                    ('composer__surname', 'Composer'), ('arranger__surname', 'Arranger'))
 
     return render(request, 'library/entrylist.twig', {
@@ -220,8 +231,10 @@ def entrylist(request):
         'columns': columns,
         'categories': Category.objects.all(),
         'genres': Genre.objects.all(),
+        'ensembles': Ensemble.objects.all(),
         'thewords': thewords,
         'thegenre': thegenre,
+        'theensemble': theensemble,
         'thecat': thecat,
         'limited': limited,
         'incomplete': incomplete

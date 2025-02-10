@@ -507,6 +507,7 @@ class AssetSubType(models.Model):
 class AssetStatus(models.Model):
     label = models.CharField(max_length=128)
     comments = models.TextField(blank=True, null=True)
+    available = models.BooleanField(default=True)
 
     def __str__(self):
         return '%s' % (self.label)
@@ -542,24 +543,48 @@ class AssetPurpose(models.Model):
     def __str__(self):
         return self.label
 
+
 class Asset(models.Model):
+    
+#    AVA = "AVAIL"
+#    AUSE = "INUSE"
+#    ALOAN = "LOAN"
+#    AMAINT = "MAINT"
+#    
+#    AVAILABILITIES = (
+#        (AVA, "Available"),
+#        (AUSE, "In use in band"),
+#        (ALOAN, "On loan outside band"),
+#        (AMAINT, "Maintenance"),
+#
+#    )
     asset_type = models.ForeignKey(AssetType, related_name='assets', on_delete=CASCADE)
     asset_subtype = models.ForeignKey(AssetSubType, related_name='assets', blank=True, null=True, on_delete=CASCADE)
     year_of_acquisition = models.IntegerField(blank=True, null=True)
     asset_condition = models.ForeignKey(AssetCondition, related_name='assets', on_delete=CASCADE)
-    asset_status = models.ForeignKey(AssetStatus, related_name='assets', blank=True, null=True, on_delete=CASCADE)
+    asset_status = models.ForeignKey(AssetStatus, related_name='assets', on_delete=CASCADE)
     allocated = models.BooleanField(verbose_name="Allocated/In Use", default=False)
+#    availability = models.CharField(max_length=8, choices=AVAILABILITIES, default=AVA)
     identifier = models.CharField(max_length=256, help_text="Serial no or other unique")
     description = models.TextField(blank=True, null=True)
     manufacturer = models.ForeignKey(AssetMaker, related_name='assets', on_delete=CASCADE)
     model = models.ForeignKey(AssetModel, related_name='assets', blank=True, null=True, on_delete=CASCADE)
     location = models.TextField(blank=True, null=True, help_text="Name/address of borrower or place")
+    storage = models.TextField(blank=True, null=True, help_text="Location in storeroom")
     owner = models.CharField(max_length=256, blank=True, null=True, help_text="Actual owner if not Oakleigh Brass")
     last_maintained = models.DateField(blank=True, null=True)
     comments = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return '%s/%s - %s: %s' % (self.asset_type, self.asset_subtype, self.manufacturer, self.model)
+        
+    @property
+    def media(self):
+        item = self.related_media.all().first()
+        if item:
+            return item.mfile
+        else:
+            return None
     
 class AssetMediaManager(models.Manager):
     def get_queryset(self):

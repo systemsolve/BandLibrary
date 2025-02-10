@@ -1,0 +1,34 @@
+{% extends "library/base.twig" %}
+{% load i18n %}
+
+{% block styles %}
+{{ wizard.form.media }}
+{% endblock %}
+
+{% block main %}
+    <a href="/">HOME</a>
+    {% if wizard.steps.prev %}
+        <h1>Checkout {{ typename }}</h1>
+    {% else %}
+    <h1>Start Checkout</h1>
+    {% endif %}
+<p>Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
+<form method="post" enctype="multipart/form-data">{% csrf_token %}
+<table>
+{{ wizard.management_form }}
+{% if wizard.form.forms %}
+    {{ wizard.form.management_form }}
+    {% for form in wizard.form.forms %}
+        {{ form.as_table }}
+    {% endfor %}
+{% else %}
+    {{ wizard.form }}
+{% endif %}
+</table>
+{% if wizard.steps.prev %}
+<button name="wizard_goto_step" formnovalidate="formnovalidate" type="submit" value="{{ wizard.steps.first }}">Start</button>
+<button name="wizard_goto_step" formnovalidate="formnovalidate" type="submit" value="{{ wizard.steps.prev }}">Previous</button>
+{% endif %}
+<input type="submit" value="{% if wizard.steps.next %}Next{% else %}Done{% endif %}"/>
+</form>
+{% endblock %}

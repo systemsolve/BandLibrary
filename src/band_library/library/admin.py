@@ -399,9 +399,10 @@ class AssetMediaAdmin(admin.TabularInline):
 
 
 class AssetAdmin(admin.ModelAdmin, ExportCsvMixin):
-    list_display = ('asset_type', 'asset_subtype', 'asset_status', 'allocated', 'manufacturer', 'model', 'identifier')
+    list_display = ('asset_type', 'asset_subtype', 'asset_status', 'manufacturer', 'model', 'identifier', 'image_present')
     search_fields = ['asset_type__label', 'asset_subtype__label', 'model__label']
-    list_filter = ('allocated', 'asset_type', 'asset_subtype', 'manufacturer')
+    list_filter = ('asset_status', 'asset_type', 'asset_subtype', 'manufacturer')
+    readonly_fields = ['image_present']
     save_on_top = True
     # autocomplete_fields = ['realname']
     actions = ["export_as_csv"]
@@ -417,6 +418,13 @@ class AssetAdmin(admin.ModelAdmin, ExportCsvMixin):
             )
         },
     }
+    
+    def image_present(self, instance):
+
+        return not not instance.media       # looks strange - ensures a boolean
+
+    image_present.short_description = "Image"
+    image_present.boolean = True
 
 
 class AuthorAdmin(admin.ModelAdmin, ExportCsvMixin):

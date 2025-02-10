@@ -1,6 +1,7 @@
 from django.urls import path
+from django.contrib.auth.decorators import login_required
 
-from . import views, api
+from . import views, api, forms
 
 urlpatterns = [
     path('', views.index, name='index'),
@@ -15,5 +16,8 @@ urlpatterns = [
     path('folder/<str:folderid>/', views.folderlist, name='folderlist'),
     path('store/', api.StoreListView.as_view(), name='store-list'),
     path('store/<int:pk>/', api.StoreItemView.as_view(), name='store-item'),
-    path('store/media/<int:pk>/', api.StoreMediaView.as_view(), name='store-media')
+    path('store/media/<int:pk>/', api.StoreMediaView.as_view(), name='store-media'),
+    path('checkout/', login_required(views.CheckoutWizard.as_view(), login_url='/')),
+    path('checkin/', login_required(views.CheckinWizard.as_view(), login_url='/')),
+    path('oneasset/<int:item>/', views.oneasset, name='oneasset'),
 ]

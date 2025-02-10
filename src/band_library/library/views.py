@@ -16,11 +16,16 @@ from .models import Genre
 from .models import Folder
 from .models import AssetMedia
 from .models import Ensemble
+from .models import Asset
+from . import forms as blforms
+
 import os
 # import subprocess
 # import sys
 import mimetypes
 from .utilx import error_log, makeimage
+from django.http import HttpResponseRedirect
+from formtools.wizard.views import SessionWizardView
 
 
 class EntryTable(tables.Table):
@@ -241,6 +246,57 @@ def entrylist(request):
     })
 
 
+
+@login_required
+def assetlist(request):
+    # fff is a Q object and won't be instantiated
+    fff, incomplete, thewords, thegenre, thecat, limited = indexdata(request)
+    if not request.user.is_staff:
+        return redirect('/')
+    else:
+        columns = (('id', 'ID'),
+                   ('title', 'Title'), ('category__label', 'Location'), ('callno', 'Label'), ('genre__label', 'Genre'),
+                   ('composer__surname', 'Composer'), ('arranger__surname', 'Arranger'))
+
+    return render(request, 'library/entrylist.twig', {
+        'devsys': settings.DEVSYS,
+        'columns': columns,
+        'categories': Category.objects.all(),
+        'genres': Genre.objects.all(),
+        'thewords': thewords,
+        'thegenre': thegenre,
+        'thecat': thecat,
+        'limited': limited,
+        'incomplete': incomplete
+    })
+
+
+@login_required
+def assets_json(request):
+    entries = Asset.objects
+    fff, incomplete, thewords, thegenre, thecat, limited = indexdata(request)
+    if fff:
+        theentries = entries.filter(fff)
+    else:
+        theentries = entries.all()
+
+    if not request.user.is_staff:
+        return JsonResponse({'data': None, 'columns': None})
+    else:
+        columns = (
+            'id',
+            'title',
+            'category__label',
+            'callno',
+            'genre__label',
+            'composer__surname',
+            'arranger__surname'
+        )
+        theentries = list(theentries.select_related('composer', 'arranger').values(*columns))
+    # RequestConfig(request, paginate={'per_page': 50}).configure(table)
+    return JsonResponse({'data': theentries, 'columns': columns})
+
+
 # basedir = '/Users/david/src/BandLibrary'
 # mediadir = os.path.join(basedir, 'media')
 # cachedir = os.path.join(basedir, 'mediacache')
@@ -377,3 +433,110 @@ def upload_template(request):
     writer = csv.writer(response)
     writer.writerow(field_names)
     return response
+
+
+CHECKINFORMS = [
+    ("start", blforms.CheckinForm1),
+    ("finish", blforms.MaintForm)
+]
+
+
+class CheckinWizard(SessionWizardView):
+    template_name = "library/checkin.twig"
+    form_list = CHECKINFORMS
+
+    def done(self, form_list, **kwargs):
+        # do_something_with_the_form_data(form_list)
+        formdata = self.get_all_cleaned_data()
+        error_log("DONE: %s" % str(formdata))
+
+        instrument = formdata.get('instrument')
+
+        instrument.asset_status_id = formdata['purpose']
+        instrument.location = "%s====\n%s\nRETURNED\n%s" % (
+            instrument.location,
+            datetime.datetime.now(),
+            formdata['notes']
+            )
+
+        instrument.save()
+
+        return redirect('oneasset', item=instrument.id)
+
+
+CHECKOUTFORMS = [
+    ("start", blforms.CheckoutForm1),
+    ("instrument", blforms.CheckoutForm2),
+    ("usage", blforms.CheckoutForm3),
+    ("final", blforms.BorrowForm)
+]
+
+
+class CheckoutWizard(SessionWizardView):
+    template_name = "library/checkout.twig"
+    form_list = CHECKOUTFORMS
+
+    def get_form(self, step=None, data=None, files=None):
+        form = super().get_form(step, data, files)
+
+        # determine the step if not given
+        if step is None:
+            step = self.steps.current
+
+        error_log("XXX handle step %s" % step)
+        if step == 'instrument':
+            xxx = self.get_cleaned_data_for_step("start")
+            error_log("XXX %s data %s" % (str(step), str(xxx)))
+            form = blforms.CheckoutForm2(choice=xxx['instrument_type'], data=data)
+            form.typename = str(xxx['instrument_type'])
+        if step == 'usage':
+            xxx = self.get_cleaned_data_for_step("instrument")
+            yyy = self.get_cleaned_data_for_step("start")
+            error_log("XXX %s data %s AND %s" % (str(step), str(yyy), str(xxx)))
+            if False and yyy['purpose'] == 'MAINT':
+                form = blforms.MaintForm(data=data)
+            else:
+                form = blforms.CheckoutForm3(data=data)
+            form.typename = str(xxx['instrument'])
+
+        return form
+
+    def get_context_data(self, form, **kwargs):
+        context = super().get_context_data(form=form, **kwargs)
+        if self.steps.current in ['instrument', 'usage']:
+            context.update({'typename': form.typename})
+        return context
+
+    def done(self, form_list, **kwargs):
+        # do_something_with_the_form_data(form_list)
+        formdata = self.get_all_cleaned_data()
+        error_log("DONE: %s" % str(formdata))
+
+        instrument = formdata.get('instrument')
+
+        instrument.asset_status_id = formdata['purpose']
+        instrument.location = "%s===\n%s\n%s|%s|%s\n%s" % (
+            instrument.location,
+            datetime.datetime.now(),
+            formdata['name'],
+            formdata['phone'],
+            formdata['email'],
+            formdata['address'])
+
+        instrument.save()
+
+        return redirect('oneasset', item=instrument.id)
+
+
+@login_required
+def oneasset(request, item):
+    limited = False
+    limitcat = None
+
+    entry = Asset.objects.filter(id__exact=item).select_related('asset_status').first()
+
+    return render(request, 'library/oneasset.twig', {
+        'devsys': settings.DEVSYS,
+        'asset': entry,
+        "can_edit": request.user.is_authenticated and request.user.is_staff,
+        "limited": limited})

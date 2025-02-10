@@ -8,6 +8,18 @@
     {% if not limited %}
     <form class="form-inline" action='/library/entrylist/'>
         Keywords: <input class="form-control" type="text" name="words" value="{{thewords}}">
+        Ensemble:
+        <select class="form-control" name="genre">
+            <option value="">All</option>
+            {% for opt in ensembles %}
+                {# must have the same integer type #}
+                {% if theensemble == opt.id %}
+                    <option selected value="{{opt.id}}">{{opt.label}}</option>
+                {% else %}
+                    <option value="{{opt.id}}">{{opt.label}}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
         Genre:
         <select class="form-control" name="genre">
             <option value="">All</option>

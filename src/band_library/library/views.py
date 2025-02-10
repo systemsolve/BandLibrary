@@ -15,6 +15,7 @@ from .models import Entry
 from .models import Genre
 from .models import Folder
 from .models import AssetMedia
+from .models import Ensemble
 import os
 # import subprocess
 # import sys
@@ -130,8 +131,15 @@ def indexdata(request):
                 cfilter = (Q(genre__exact=www))
                 fff = fff & cfilter
                 thegenre = int(www)
+                
+        if 'ensemble' in request.GET:
+            www = request.GET['ensemble']
+            if www and is_number(www):
+                cfilter = (Q(ensemble__exact=www))
+                fff = fff & cfilter
+                theensemble = int(www)
 
-    return fff, incomplete, thewords, thegenre, thecat, limited
+    return fff, incomplete, thewords, thegenre, thecat, limited, theensemble
 
 
 @login_required
@@ -139,7 +147,7 @@ def index(request):
     if request.method == 'POST':
         return redirect('/')
     entries = Entry.objects
-    fff, incomplete, thewords, thegenre, thecat, limited = indexdata(request)
+    fff, incomplete, thewords, thegenre, thecat, limited, theensemble = indexdata(request)
     if fff:
         table = EntryTable(entries.filter(fff))
     else:
@@ -152,8 +160,10 @@ def index(request):
         'entries': table,
         'categories': Category.objects.all(),
         'genres': Genre.objects.all(),
+        'ensembles': Ensemble.objects.all(),
         'thewords': thewords,
         'thegenre': thegenre,
+        'theensemble': theensemble,
         'thecat': thecat,
         'limited': limited,
         'incomplete': incomplete
@@ -310,12 +320,14 @@ def top(request):
 
     genres = Genre.objects.all()
     folders = Folder.objects.all()
+    ensembles = Ensemble.objects.all()
 
     return render(request, 'library/home.twig', {
         'devsys': settings.DEVSYS,
         'categories': categories,
         'genres': genres,
         'folders': folders,
+        'ensembles': ensembles,
         'limited': limited
     })
 

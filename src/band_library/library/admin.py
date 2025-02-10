@@ -131,10 +131,10 @@ class CsvImportForm(forms.Form):
 
 
 class EntryAdmin(admin.ModelAdmin, ExportCsvMixin):
-    list_display = ('title', 'genre', 'category', 'callno_format', 'composer', 'arranger', 'source', 'publisher', 'pubname',
+    list_display = ('title', 'genre', 'ensemble', 'category', 'callno_format', 'composer', 'arranger', 'source', 'publisher', 'pubname',
                     'pubyear', 'estdecade', 'pagecount', 'condition', 'platecode', 'image_present', 'instrument', 'key',
                     'completeness')
-    list_filter = ('category', 'genre', 'saleable', 'composer__country', 'completeness__usable', 'duplicate', 'completeness',
+    list_filter = ('category', 'ensemble', 'genre', 'saleable', 'composer__country', 'completeness__usable', 'duplicate', 'completeness',
                    ('key', admin.RelatedOnlyFieldListFilter), 'source', EmptyMediaFilter,
                    ('provider', admin.RelatedOnlyFieldListFilter))
     search_fields = ['title', 'composer__given', 'composer__surname', 'arranger__surname', 'callno', 'comments',

@@ -37,7 +37,7 @@
     };
     var dt_options = {
         "responsive": true,
-        "ajax": '../entrydata/?words={{thewords}}&category={{thecat}}&genre={{thegenre}}&incomplete={{incomplete}}',
+        "ajax": '../entrydata/?words={{thewords}}&category={{thecat}}&genre={{thegenre}}&incomplete={{incomplete}}&ensemble={{theensemble}}',
         dataSrc: 'data'
     };
     dt_options['order'] = [[1, 'asc']];
@@ -68,7 +68,19 @@
     {% if not limited %}
     
         <form class="form-inline" action='/library/entrylist/'>
-            Keywords: <input class="form-control" type="text" name="words" value="{{thewords}}"> 
+            Keywords: <input class="form-control" type="text" name="words" value="{{thewords}}">
+            Ensemble:
+            <select class="form-control" name="ensemble">
+                <option value="">All</option>
+                {% for opt in ensembles %}
+                    {# must have the same integer type #}
+                    {% if theensemble == opt.id %}
+                        <option selected value="{{opt.id}}">{{opt.name}}</option>
+                    {% else %}
+                        <option value="{{opt.id}}">{{opt.name}}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
             Genre: 
             <select class="form-control" name="genre">
                 <option value="">All</option>
@@ -109,6 +121,7 @@
                 <th>Label</th>
                 {% endif %}
                 <th>Genre</th>
+                <th>Ensemble</th>
                 <th>Composer</th>
                 <th>Arranger</th>
                 
@@ -123,6 +136,7 @@
                 <th>Label</th>
                 {% endif %}
                 <th>Genre</th>
+                <th>Ensemble</th>
                 <th>Composer</th>
                 <th>Arranger</th>
                 

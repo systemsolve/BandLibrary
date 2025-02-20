@@ -35,7 +35,11 @@ def titlecase(s):
         lambda word: word.group(0).lower() if word.group().lower() in EXCLUSIONS else word.group(0).capitalize(),
         s1)
     # return s2
-    return s2[0].upper() + s2[1:]
+    # if the field is empty, so is s2
+    if len(s2) > 1:
+        return s2[0].upper() + s2[1:]
+    else:
+        return s2
 
 def xxmaketitle(value):
     tricky1re = re.compile(r'(.*), (a|the)(.*)', flags=re.I) # separate article

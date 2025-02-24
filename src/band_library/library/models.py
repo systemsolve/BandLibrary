@@ -687,7 +687,9 @@ class Folder(models.Model):
     slot_count = models.IntegerField(default=35)
     issue_date = models.DateField()
     sidebar = tinymce_models.HTMLField(blank=True, null=True, help_text="Text to annotate the index.")
+    parts = models.CharField(max_length=32, blank=True, null=True)
     objects = FolderManager()
+    
     
     def __str__(self):
         return "%s (%d)" % (self.label, self.slot_count)

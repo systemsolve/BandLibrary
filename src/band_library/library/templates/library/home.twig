@@ -54,14 +54,17 @@
         <ul>
         {% endif %}
         <li><a href="{% url 'folderlist' folder.id %}">{{ folder.label }}</a> - as at {{ folder.issue_date }}
+            {% if folder.parts %}<a href="/library/files/{{ folder.parts }}/">PARTS</a>{% endif %}
         {% if forloop.last %}
         </ul>
         {% endif %}
     {% empty %}
         <h2>No music folder lists yet</h2>
     {% endfor %}
+    <h2><a href='/library/files/'>Player Parts</a></h2>
     {% if user.is_staff %}
-    <p><a href='/admin/'>Admin: authorised users only</a></p>
+        <hr>
+        <p><a href='/admin/'>Admin: authorised users only</a></p>
     {% endif %}
     <hr>
     <a href='/logout'>Log out</a>

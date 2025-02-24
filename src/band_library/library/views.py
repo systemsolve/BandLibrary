@@ -17,6 +17,7 @@ from .models import Folder
 from .models import AssetMedia
 from .models import Ensemble
 import os
+import glob
 # import subprocess
 # import sys
 import mimetypes
@@ -377,3 +378,25 @@ def upload_template(request):
     writer = csv.writer(response)
     writer.writerow(field_names)
     return response
+    
+    
+@login_required
+def fileview(request, path=""):
+    fullpath = os.path.join(settings.FBASE, path)
+    if os.path.isdir(fullpath):
+        filenames = glob.glob(os.path.join(settings.FBASE, path, '*'))
+        files = []
+        for fff in filenames:
+            files.append({"name": os.path.basename(fff), "stat": os.stat(fff)})
+
+        return render(request, 'library/fileview.twig', {'devsys': settings.DEVSYS, 'home': path, 'parent': '[UP]', 'files': files, 'thefile': None})
+    else:
+        return HttpResponse(
+            open(fullpath, 'rb'), 
+            content_type='text/plain',  # it's a download, mime type doesn't matter
+            headers={
+                'Content-Disposition': f"attachment; filename=%s" % os.path.basename(fullpath),
+                'Cache-Control': 'no-cache'  # files are dynamic, prevent caching
+            }
+        )
+   

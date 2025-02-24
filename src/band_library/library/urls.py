@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, re_path
 
 from . import views, api
 
@@ -13,6 +13,8 @@ urlpatterns = [
     path('athumb/<int:item>/', views.athumb, name='athumb'),
     path('pagefile/<name>/', views.pagefile, name='pagefile'),
     path('folder/<str:folderid>/', views.folderlist, name='folderlist'),
+    path('files/', views.fileview, name='fileview'),
+    path('files/<path:path>/', views.fileview, name='fileview'),
     path('store/', api.StoreListView.as_view(), name='store-list'),
     path('store/<int:pk>/', api.StoreItemView.as_view(), name='store-item'),
     path('store/media/<int:pk>/', api.StoreMediaView.as_view(), name='store-media')

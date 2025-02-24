@@ -1,0 +1,89 @@
+{% extends "library/baseprint.twig" %}
+{% load band_tags %}
+{% load static %}
+{% block styles %}
+    <style type="text/css">
+        table.indexcols tbody {
+            vertical-align: top;
+        }
+        table.folder {
+            width: 100%;
+        }
+        .folder td {
+            border: 1px solid black;
+        }
+
+        td.folder {
+            width: 45%;
+            padding-right: 2em;
+        }
+        div.column {
+            display: inline-block;
+            width: 45%;
+            vertical-align: top;
+        }
+        div.column.right {
+            margin-left: 16px;
+            margin-top: 18pt; /* track TH font size */
+        }
+        table.folder td, table.folder th {
+            font-size: 16pt;
+        }
+        
+        body {
+            margin-left: 16px;
+        }
+        
+        @media print {
+            body {
+                margin-left: 0;
+            }
+            body, div.column {
+                transform: scale(0.9);
+            }
+            .devsys, #nav {
+                display: none;
+            }
+            table.heading td {
+                /* transform: scale(0.8); */
+            }
+            table.folder td, table.folder th {
+                font-size: 14pt;
+            }
+            h1 {
+                font-size: 3rem;  
+            } 
+            div.breakpage {
+                break-after: page;
+            }
+            
+        }
+        
+
+    </style>
+{% endblock %}
+{% block title %}
+    <title>Folder: {{home}}</title>
+{% endblock %}
+{% block main %}
+    <div class='row' id='nav'>
+        <h3 class='col-md-4'><a href='/'>HOME</a></h3>
+    </div>
+    <table class="heading">
+        <tbody>
+            <tr>
+                <td><img src="{% static 'apple-touch-icon.png' %}"></td>
+                <td><h1><a href="..">{{ parent }}</a>/{{ home }}</h1></td>
+            </tr>
+            {% for finfo in files %}
+            <tr>
+                <td><a href="{{ finfo.name }}/">{{ finfo.name }}</a></td>
+                <td>{{ finfo.stat }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+{#    <div class="column left">#}
+
+{% endblock %}

@@ -20,6 +20,7 @@ from .models import Entry
 from .models import EntryMedia
 from .models import Genre
 from .models import Folder
+from .models import FolderItem
 from .models import Author
 import os
 import subprocess
@@ -117,6 +118,34 @@ class EntrySerializer(serializers.ModelSerializer):
         model = Entry
         fields = ['id','title','duration','fee','perfnotes','genre','ensemble','composer','arranger','publisher']
         depth = 2
+        
+class FolderEntrySerializer(serializers.ModelSerializer):
+    genre = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field='label'
+    )
+    ensemble = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field='name'
+    )
+    
+    class Meta:
+        model = Entry
+        fields = ['id','title', 'genre', 'ensemble']
+        depth = 2
+
+class FolderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Folder
+        fields = ['id','label','issue_date']
+        depth = 2
+
+class FolderItemSerializer(serializers.ModelSerializer):
+    entry = FolderEntrySerializer()
+    class Meta:
+        model = FolderItem
+        fields = ['id', 'title', 'comment', 'position', 'entry']
+        depth = 2
 
 class StoreListView(View):
     def get(self, request, *args, **kwargs):
@@ -178,3 +207,33 @@ class StoreMediaView(View):
             return makeimage(media.name, '', '')
         else:
             raise Http404("No media")
+
+class FolderListView(View):
+    def get(self, request, *args, **kwargs):
+        entries = Folder.objects.all()
+        eresponse = FolderSerializer(entries, many=True)
+        message = {
+            'type': 'FolderList',
+            'text': 'hello world',
+            'entries': eresponse.data
+        }
+        return JsonResponse(message)
+
+class FolderView(View):
+    def get(self, request, *args, **kwargs):
+        try:
+            entries = Folder.objects.filter(pk=kwargs['pk'])
+        except Entry.DoesNotExist:
+            raise Http404("No such entry")
+
+        if len(entries) == 0:
+            raise Http404("No such entry")
+        
+        entry = entries[0]
+        eresponse = FolderItemSerializer(entry.slots, many=True)
+        message = {
+            'type': 'Folder',
+            'text': 'hello world',
+            'entries': eresponse.data
+        }
+        return JsonResponse(message)

@@ -132,7 +132,7 @@ def indexdata(request):
                 cfilter = (Q(genre__exact=www))
                 fff = fff & cfilter
                 thegenre = int(www)
-                
+
         if 'ensemble' in request.GET:
             www = request.GET['ensemble']
             if www and is_number(www):
@@ -150,14 +150,14 @@ def index(request):
         return redirect('/')
     entries = Entry.objects
     fff, incomplete, thewords, thegenre, thecat, limited, theensemble = indexdata(request)
-    
+
     if fff:
         equery = entries.filter(fff)
     else:
         equery = entries.all()
-        
+
     error_log("E QUERY: %s" % equery.query)
-    
+
     table = EntryTable(equery)
     if not request.user.is_staff:
         table.exclude = ('id', 'comments', 'callno', 'added', 'duration', 'incomplete')
@@ -185,7 +185,7 @@ def index_json(request):
         theentries = entries.filter(fff)
     else:
         theentries = entries.all()
-        
+
     error_log("IJSON: %s" % theentries.query)
 
     if not request.user.is_staff:
@@ -349,11 +349,33 @@ def logout_view(request):
     logout(request)
     return redirect('/')
 
+# from django_weasyprint.views import WeasyTemplateResponse
+import weasyprint
 
 def folderlist(request, folderid):
     # TODO: speed up query - use prefetch_related to pull "slots" and "slots__entry"
     folder = Folder.objects.filter(pk__exact=folderid).first()
-    return render(request, 'library/folderlist.twig', {'devsys': settings.DEVSYS, 'folder': folder})
+    format = request.GET.get("format", "page")
+    
+    context = {'devsys': settings.DEVSYS, 'folder': folder}
+
+    if format == "pdf":
+        from django.template.loader import render_to_string
+
+        from django_weasyprint.utils import django_url_fetcher
+        filename = "/var/tmp/index-%s.pdf" % folderid
+        weasy_html = weasyprint.HTML(
+            string=render_to_string('library/folderlist.twig', context=context),
+            url_fetcher=django_url_fetcher,
+            base_url=request.build_absolute_uri(),
+        )
+        weasy_html.write_pdf(filename)
+        response = FileResponse(open(filename, "rb"))
+        return response
+
+        # return WeasyTemplateResponse(request, 'library/folderlist.twig', context=context)
+
+    return render(request, 'library/folderlist.twig', context)
 
 
 @login_required

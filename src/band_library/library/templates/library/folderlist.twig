@@ -13,7 +13,7 @@
             border: 1px solid black;
         }
 
-        td.folder {
+        table.indexcols td.folder, table.indexcols td.sidebar {
             width: 45%;
             padding-right: 2em;
         }
@@ -35,8 +35,14 @@
         }
         
         @media print {
+            @page {
+                size: 210mm 297mm;
+                margin-top: 0;
+                margin-left: 0;
+            }
             body {
                 margin-left: 0;
+                max-width: 210mm;
             }
             body, div.column {
                 transform: scale(0.9);
@@ -55,6 +61,10 @@
             } 
             div.breakpage {
                 break-after: page;
+            }
+            table.indexcols td.sidebar {
+                transform: scale(0.7);
+                
             }
             
         }
@@ -107,7 +117,7 @@
                 {% endfor %}
             </table>
         </td>
-        <td>
+        <td class="sidebar">
 {#    </div>#}
 {#    <div class="column right">#}
         {{ folder.sidebar|safe }}
@@ -142,7 +152,7 @@
                 {% endfor %}
             </table>
         </td>
-        <td>
+        <td class="sidebar">
         {{ folder.sidebar|safe }}
         </td>
     </tr>

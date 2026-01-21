@@ -31,7 +31,7 @@ except ImportError:
 
 CSV_DEBUG = DEBUG and DEVSYS
 
-ALLOWED_HOSTS = ['library.oakleighband.org.au', 'devlibrary.oakleighband.org.au', 'azlibrary.oakleighband.org.au']
+ALLOWED_HOSTS = ['library.oakleighband.org.au', 'devlibrary.oakleighband.org.au', 'azlibrary.oakleighband.org.au', 'localhost']
 
 INTERNAL_IPS = [
     '165.225.227.53', '20.70.138.164'

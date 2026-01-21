@@ -21,7 +21,13 @@ def makethumb(value):
     iii = Incipit(source=fff)    
     return iii.generate()
 
-EXCLUSIONS = ('the', 'a', 'an', 'by', 'with', 'from', 'of', 'to', 'and', 'in')
+# EXCLUSIONS = ('the', 'a', 'an', 'by', 'with', 'from', 'of', 'to', 'and', 'in')
+
+EXCLUSIONSRE = [r'^the$', r'^a$', r'^an$', r'^by$', r'^with$', r'^from$', r'^of$', r'^\d+']
+
+def matches_any(text, patterns):
+    return any(re.search(p, text) for p in patterns)
+
 
 @register.filter(name='totitle')
 def titlecase(s):
@@ -31,10 +37,11 @@ def titlecase(s):
     s0 = tricky1re.sub(r"\2 \1\3", s)
     s1 = tricky2re.sub(r"\1", s0)
     s2 = re.sub(
-        r"[A-Za-z]+('[A-Za-z]+)?",
-        lambda word: word.group(0).lower() if word.group().lower() in EXCLUSIONS else word.group(0).capitalize(),
+        r"[A-Za-z0-9]+('[A-Za-z]+)?",
+        lambda word: word.group(0).lower() if matches_any(word.group(0).lower(), EXCLUSIONSRE) else word.group(0).capitalize(),
         s1)
     # return s2
+    # print("S2 %s" % s2)
     return s2[0].upper() + s2[1:]
 
 def xxmaketitle(value):
